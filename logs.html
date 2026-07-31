@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Log - ISOTOPE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <nav class="navbar">
+        <div class="brand-title">📜 TRANSACTION LOG</div>
+        <div class="nav-buttons">
+            <button onclick="downloadJSON()" class="btn btn-outline">📥 JSON ডাউনলোড</button>
+            <a href="index.html" class="btn btn-primary">⬅️ মূল ড্যাশবোর্ড</a>
+        </div>
+    </nav>
+
+    <div class="card glass-card">
+        <div class="card-title">মেসের কাঁচা লেনদেন লগ (Excel View)</div>
+        <div class="table-responsive">
+            <table class="excel-table">
+                <thead>
+                    <tr>
+                        <th>তারিখ / আইডি</th>
+                        <th>সদস্যের নাম</th>
+                        <th>খাত / বিবরণ</th>
+                        <th>ধরণ</th>
+                        <th class="text-right">পরিমাণ (৳)</th>
+                    </tr>
+                </thead>
+                <tbody id="transactionLogs">
+                    <!-- Dynamic Transaction Rows -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-analytics.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAckBpcMbXPoWnOQmvtXY10ofknwRJTz2A",
+      authDomain: "isotope-beta.firebaseapp.com",
+      projectId: "isotope-beta",
+      storageBucket: "isotope-beta.firebasestorage.app",
+      messagingSenderId: "419427665548",
+      appId: "1:419427665548:web:624b67b1db48698c121da9",
+      measurementId: "G-TS9R91ZKK1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+
+    window.firebaseApp = app;
+    window.firebaseDb = db;
+
+    async function loadLogs() {
+        let transactions = [];
+        let rawData = localStorage.getItem('isotope_mess_data');
+        if (rawData) {
+            try {
+                let parsed = JSON.parse(rawData);
+                if (parsed.transactions) transactions = parsed.transactions;
+            } catch(err) {}
+        }
+
+        try {
+            const querySnapshot = await getDocs(collection(db, "transactions"));
+            if (!querySnapshot.empty) {
+                transactions = [];
+                querySnapshot.forEach((doc) => {
+                    transactions.push(doc.data());
+                });
+            }
+        } catch(e) {
+            if(e.code === 'permission-denied') {
+                console.warn("Firebase permission denied. Please set your Firestore Rules to allow read/write in Firebase Console.");
+            } else {
+                console.error("Firebase load logs error:", e);
+            }
+        }
+
+        const tbody = document.getElementById('transactionLogs');
+        tbody.innerHTML = '';
+
+        if(!transactions || transactions.length === 0) return;
+
+        transactions.forEach((tx, idx) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${tx.date || ('2026-07-0' + (idx+1))}</td>
+                    <td><b>${tx.member}</b></td>
+                    <td>${tx.note || 'বাজার জমা'}</td>
+                    <td><span class="badge-green">ইনপুট</span></td>
+                    <td class="text-right">৳ ${Number(tx.amount).toFixed(2)}</td>
+                </tr>
+            `;
+        });
+    }
+
+    window.downloadJSON = function() {
+        const data = localStorage.getItem('isotope_mess_data');
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `isotope_mess_log_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+    }
+
+    window.onload = loadLogs;
+</script>
+</body>
+</html>

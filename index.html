@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISOTOPE Ultra-Modern Mess Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="clay-background-blob blob-1"></div>
+<div class="clay-background-blob blob-2"></div>
+
+<!-- Toast Notification Container -->
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- Custom Confirmation Modal -->
+<div id="confirmModal" class="modal">
+    <div class="modal-content clay-card text-center">
+        <div class="confirm-icon-box">
+            <svg class="svg-icon svg-icon-large danger-color" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        </div>
+        <h3 id="confirmTitle" style="margin-top: 10px;">আপনি কি নিশ্চিত?</h3>
+        <p id="confirmMessage" style="font-size: 13px; color: #64748b; margin: 10px 0 20px 0;"></p>
+        <div class="modal-actions">
+            <button class="btn clay-btn" onclick="closeConfirmModal(false)">বাতিল</button>
+            <button id="confirmAgreeBtn" class="btn clay-btn clay-btn-danger">হ্যাঁ, ডিলিট করুন</button>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN DASHBOARD VIEW -->
+<div id="mainDashboard" class="container">
+    <!-- Navbar -->
+    <nav class="navbar clay-card">
+        <div class="brand-container">
+            <div class="logo-box clay-btn-icon">
+                <svg viewBox="0 0 24 24" class="svg-icon" style="width:24px; height:24px; fill:#ffffff;">
+                    <rect x="2" y="2" width="9" height="13" rx="2.5"></rect>
+                    <rect x="13" y="2" width="9" height="6" rx="2"></rect>
+                    <rect x="13" y="10" width="9" height="12" rx="2.5"></rect>
+                    <rect x="2" y="17" width="9" height="5" rx="2"></rect>
+                </svg>
+            </div>
+            <div>
+                <div class="brand-title">ISOTOPE</div>
+                <div class="brand-subtitle">মেস হিসাব ড্যাশবোর্ড • ইন্টারঅ্যাক্টিভ ট্রানজেকশন সিস্টেম</div>
+            </div>
+        </div>
+        <div class="nav-buttons">
+            <button class="btn clay-btn" onclick="showTxnPage()">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                ট্রানজেকশন লগ
+            </button>
+            <button id="adminBtn" class="btn clay-btn clay-btn-primary" onclick="handleAdminToggle()">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                <span id="adminBtnText">এডমিন কন্ট্রোল</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Summary Section -->
+    <div class="summary-section">
+        <div class="clay-card">
+            <div class="card-title">
+                <span class="title-with-icon">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                    মেসের মোট হিসাব সামারি টেবিল
+                </span>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>বিবরণ / আইটেম</th>
+                            <th class="text-right">মোট পরিমাণ (BDT)</th>
+                            <th class="text-right">জনপ্রতি ভাগ (BDT)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Member Table -->
+    <div class="clay-card">
+        <div class="card-title">
+            <span class="title-with-icon">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                সদস্যভিত্তিক বিস্তারিত হিসাব সামারি
+            </span>
+            <button id="adminBadge" class="admin-badge-btn" style="display:none;" onclick="toggleAdminDrawer(true)">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+                এডমিন প্যানেল খুলুন
+            </button>
+        </div>
+        <div style="margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <div style="font-size: 13px; color: #475569; font-weight: 600;">সদস্য কলাম ফোকাস / হাইলাইট:</div>
+            <select id="memberHighlightSelect" class="drawer-input" style="padding: 6px 12px; font-size: 13px; min-width: 220px;" onchange="highlightMemberColumn(this.value)">
+                <option value="">👤 আপনার নাম নির্বাচন করুন</option>
+            </select>
+        </div>
+        <div class="table-responsive" id="memberTableContainer">
+            <table class="horizontal-table">
+                <thead>
+                    <tr>
+                        <th style="min-width: 190px;">আইটেম / সদস্য</th>
+                        <th class="text-right">আজমাইন</th>
+                        <th class="text-right">রিয়াজ</th>
+                        <th class="text-right">সাকিব</th>
+                        <th class="text-right">ওমর</th>
+                        <th class="text-right">ফারেছ</th>
+                        <th class="text-right">নাফিজ</th>
+                    </tr>
+                </thead>
+                <tbody id="memberTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Dynamic Notice Board Section -->
+    <div class="clay-card">
+        <div class="card-title title-with-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            মেস নোটিশ বোর্ড & বিশেষ নির্দেশাবলী
+        </div>
+        <div class="notice-container" id="noticeContainer"></div>
+    </div>
+</div>
+
+<!-- FULL-PAGE TRANSACTION LOG VIEW -->
+<div id="txnPage" class="container" style="display: none;">
+    <div class="clay-card">
+        <div class="txn-page-header">
+            <div>
+                <h2>📊 ট্রানজেকশন হিস্ট্রি</h2>
+                <p style="font-size: 13px; color: #64748b;">মেসের যাবতীয় জমা ও খরচের বিস্তারিত তথ্যপত্র</p>
+            </div>
+            <div class="nav-buttons">
+                <!-- Admin Access Button inside Txn Log (Always visible or toggling state) -->
+                <button id="txnAdminNavBtn" class="btn clay-btn clay-btn-primary" onclick="handleAdminToggle()">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                    <span id="txnAdminNavBtnText">এডমিন কন্ট্রোল</span>
+                </button>
+                <button class="btn clay-btn" onclick="hideTxnPage()">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                    ড্যাশবোর্ডে ফিরুন
+                </button>
+            </div>
+        </div>
+
+        <!-- Sheet Actions Toolbar -->
+        <div class="excel-toolbar">
+            <div class="toolbar-left">
+                <div class="search-input-wrapper">
+                    <svg class="svg-icon search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <input type="text" id="txnSearchInput" class="drawer-input" style="padding-left: 32px;" placeholder="সার্চ করুন (নাম/বিবরণ)..." onkeyup="renderTransactions()">
+                </div>
+                <select id="txnMemberFilter" class="drawer-input" onchange="renderTransactions()">
+                    <option value="ALL">সকল মেম্বার</option>
+                </select>
+            </div>
+            <div class="toolbar-right">
+                <span style="font-size: 13px; font-weight: 600; color: #475569;">এক্সপোর্ট করুন:</span>
+                <button class="btn clay-btn" onclick="exportCSV()">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                    CSV (Google Sheets)
+                </button>
+                <button class="btn clay-btn" onclick="exportJSON()">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+                    Backup
+                </button>
+                <button class="btn clay-btn clay-btn-primary" onclick="exportPDF()">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-4 11H9v-4h6v4zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+                    Print
+                </button>
+            </div>
+        </div>
+
+        <!-- Table Sheet Layout -->
+        <div class="table-responsive excel-grid-container">
+            <table class="excel-table">
+                <thead>
+                    <tr>
+                        <th># SL</th>
+                        <th>তারিখ ও সময়</th>
+                        <th>সদস্যের নাম</th>
+                        <th>বিবরণ / নোট</th>
+                        <th class="text-right">জমার পরিমাণ (BDT)</th>
+                        <th id="thAdminAction" class="text-center" style="display:none;">এডমিন অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody id="txnExcelTableBody"></tbody>
+                <tfoot>
+                    <tr class="excel-total-row">
+                        <td colspan="4" class="text-right font-bold">সর্বমোট জমা (Total Deposit):</td>
+                        <td id="excelTotalAmount" class="text-right font-bold text-green">BDT 0.00</td>
+                        <td id="tfAdminAction" style="display:none;"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Password Modal -->
+<div id="adminModal" class="modal">
+    <div class="modal-content clay-card">
+        <div class="confirm-icon-box">
+            <svg class="svg-icon svg-icon-large primary-color" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+        </div>
+        <h3>এডমিন সিকিউরিটি এক্সেস</h3>
+        <p style="font-size: 13px; color: #64748b; margin-top: 6px;">ডাটা এডিট করতে সিক্রেট পাসওয়ার্ডটি দিন:</p>
+        
+        <div class="password-wrapper clay-inset">
+            <input type="password" id="adminPassword" placeholder="পাসওয়ার্ড লিখুন..." class="modal-input-raw">
+            <span class="eye-btn" onclick="togglePasswordVisibility()">
+                <svg id="eyeIconSvg" class="svg-icon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </span>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn clay-btn" onclick="closeAdminModal()">বাতিল</button>
+            <button class="btn clay-btn clay-btn-primary" onclick="verifyAdmin()">আনলক করুন</button>
+        </div>
+    </div>
+</div>
+
+<!-- Slide-Over Admin Drawer -->
+<div id="adminDrawer" class="admin-drawer">
+    <div class="drawer-header">
+        <div class="drawer-header-left">
+            <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+            <h2>এডমিন কন্ট্রোল প্যানেল</h2>
+        </div>
+        <div class="drawer-header-right">
+            <!-- Turn Off Admin Button Beside Title -->
+            <button class="btn clay-btn clay-btn-danger" style="padding: 6px 10px; font-size: 12px;" onclick="turnOffAdmin()">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                মোড অফ
+            </button>
+            <button class="close-drawer-btn" onclick="toggleAdminDrawer(false)">✕</button>
+        </div>
+    </div>
+    
+    <div class="drawer-body">
+        
+        <!-- Section: Add Money / Deposit Entry -->
+        <div class="admin-tab-section">
+            <h3>
+                <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                মেম্বার ডিপোজিট এন্ট্রি (টাকা জমা নেওয়া)
+            </h3>
+            <div class="clay-inset notice-admin-box">
+                <div class="input-group">
+                    <label>সদস্য নির্বাচন করুন:</label>
+                    <select id="txnMemberSelect" class="drawer-input"></select>
+                </div>
+                <div class="input-group" style="margin-top: 8px;">
+                    <label>জমার পরিমাণ (BDT):</label>
+                    <input type="number" id="txnAmountInput" class="drawer-input" placeholder="যেমন: 1000">
+                </div>
+                <div class="input-group" style="margin-top: 8px;">
+                    <label>নোট / বিবরণ:</label>
+                    <input type="text" id="txnNoteInput" class="drawer-input" placeholder="যেমন: ক্যাশ জমা / বিকাশ">
+                </div>
+                <button class="btn clay-btn clay-btn-primary full-width-btn" style="margin-top: 10px;" onclick="submitDepositTransaction()">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    জমা সেভ করুন
+                </button>
+            </div>
+        </div>
+
+        <hr class="drawer-divider">
+
+        <!-- Section 1: Fixed Costs -->
+        <div class="admin-tab-section">
+            <h3>
+                <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                ইউটিলিটি ও ফিক্সড খরচ
+            </h3>
+            <div id="drawerFixedCostsInputs" class="drawer-inputs-grid"></div>
+            <button class="btn clay-btn clay-btn-primary full-width-btn" onclick="saveFixedCosts()">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+                ইউটিলিটি খরচ সেভ করুন
+            </button>
+        </div>
+
+        <hr class="drawer-divider">
+
+        <!-- Section 2: Member Entries -->
+        <div class="admin-tab-section">
+            <h3>
+                <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                সদস্যভিত্তিক মিল ও এডজাস্টমেন্ট
+            </h3>
+            <div class="input-group" style="margin-bottom: 8px;">
+                <label>অন্যান্য এডজাস্টমেন্টের নাম:</label>
+                <input type="text" id="customAdjLabelInput" class="drawer-input" value="ফ্রিজ সমন্বয়">
+            </div>
+            <button class="btn clay-btn clay-btn-primary full-width-btn" style="margin-bottom: 12px;" onclick="saveCustomAdjLabel()">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+                এডজাস্টমেন্ট নাম সেভ করুন
+            </button>
+            <div id="drawerMemberInputs" class="drawer-member-list"></div>
+        </div>
+
+        <hr class="drawer-divider">
+
+        <!-- Section 3: Notice Board Manager -->
+        <div class="admin-tab-section">
+            <h3>
+                <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z"/></svg>
+                নোটিশ বোর্ড কন্ট্রোল
+            </h3>
+            <div class="clay-inset notice-admin-box">
+                <div class="input-group">
+                    <label>নতুন নোটিশ লিখুন:</label>
+                    <textarea id="newNoticeText" class="drawer-input" rows="2" placeholder="নোটিশের তথ্য লিখুন..."></textarea>
+                </div>
+                <div class="input-group" style="margin-top: 8px;">
+                    <label>নোটিশ টাইপ:</label>
+                    <select id="newNoticeType" class="drawer-input">
+                        <option value="notice-urgent">🚨 জরুরি (লাল)</option>
+                        <option value="notice-advance">🌱 অগ্রিম/পেমেন্ট (সবুজ)</option>
+                        <option value="notice-info">💡 সাধারণ/তথ্য (হলুদ)</option>
+                        <option value="notice-meeting">👥 মিটিং/সভা (বেগুনি)</option>
+                        <option value="notice-bazar">🛒 বাজার/মিল (সায়ান)</option>
+                        <option value="notice-other">📌 অন্যান্য (ধূসর)</option>
+                    </select>
+                </div>
+                <button class="btn clay-btn clay-btn-primary full-width-btn" style="margin-top: 10px;" onclick="addNewNotice()">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    নোটিশ যোগ করুন
+                </button>
+            </div>
+            <div id="adminNoticeList" style="margin-top: 15px;"></div>
+        </div>
+
+    </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-analytics.js";
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAckBpcMbXPoWnOQmvtXY10ofknwRJTz2A",
+    authDomain: "isotope-beta.firebaseapp.com",
+    projectId: "isotope-beta",
+    storageBucket: "isotope-beta.firebasestorage.app",
+    messagingSenderId: "419427665548",
+    appId: "1:419427665548:web:624b67b1db48698c121da9",
+    measurementId: "G-TS9R91ZKK1"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db = getFirestore(app);
+
+  window.firebaseApp = app;
+  window.firebaseDb = db;
+  window.dispatchEvent(new CustomEvent('firebase-ready'));
+</script>
+
+<script src="app.js"></script>
+</body>
+</html>
