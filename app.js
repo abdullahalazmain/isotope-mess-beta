@@ -560,9 +560,19 @@ function highlightMemberColumn(memberName) {
     const container = document.getElementById('memberTableContainer');
     if(container) {
         const sampleHeaderCell = table.querySelector(`thead tr th:nth-child(${targetColIdx + 1})`);
-        if(sampleHeaderCell) {
+        const firstHeaderCell = table.querySelector('thead tr th:first-child');
+        if(sampleHeaderCell && firstHeaderCell) {
+            const stickyWidth = firstHeaderCell.offsetWidth;
+            const containerWidth = container.clientWidth;
+            const visibleWidth = containerWidth - stickyWidth;
+            
+            const cellCenter = sampleHeaderCell.offsetLeft + (sampleHeaderCell.offsetWidth / 2);
+            const viewportCenter = stickyWidth + (visibleWidth / 2);
+            
+            const targetScrollLeft = Math.max(0, cellCenter - viewportCenter);
+
             container.scrollTo({
-                left: sampleHeaderCell.offsetLeft - container.offsetWidth / 2 + sampleHeaderCell.offsetWidth / 2,
+                left: targetScrollLeft,
                 behavior: 'smooth'
             });
         }

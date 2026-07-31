@@ -195,6 +195,8 @@ th.highlight-column {
 .txn-page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #cbd5e1; padding-bottom: 12px; }
 .excel-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; background: #e2e8f0; padding: 12px; border-radius: 12px; }
 .toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.export-btns-group { display: flex; align-items: center; gap: 8px; }
+.export-sub-btns { display: flex; align-items: center; gap: 8px; }
 
 .search-input-wrapper { position: relative; display: inline-block; }
 .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); fill: #64748b; }
@@ -372,20 +374,28 @@ th.highlight-column {
     .horizontal-table {
         table-layout: fixed;
         min-width: 1100px;
+        border-collapse: separate;
+        border-spacing: 0;
     }
 
     .horizontal-table th:first-child, .horizontal-table td:first-child {
-        width: 135px;
-        min-width: 135px;
-        max-width: 135px;
+        position: sticky;
+        left: 0;
+        width: 135px !important;
+        min-width: 135px !important;
+        max-width: 135px !important;
+        box-sizing: border-box !important;
         font-size: 12px;
         padding: 8px 6px;
+        z-index: 21 !important;
+        box-shadow: 2px 0 6px -1px rgba(0, 0, 0, 0.18);
     }
 
     .horizontal-table th:not(:first-child), .horizontal-table td:not(:first-child) {
-        width: 160px;
-        min-width: 160px;
-        max-width: 160px;
+        width: 160px !important;
+        min-width: 160px !important;
+        max-width: 160px !important;
+        box-sizing: border-box !important;
         font-size: 12px;
         padding: 8px 6px;
     }
