@@ -336,11 +336,21 @@ function deleteTransaction(txnId) {
     showConfirmModal(
         "ট্রানজেকশন ডিলিট",
         `আপনি কি নিশ্চিত যে ${targetTxn.member}-এর BDT ${targetTxn.amount} জমার এন্ট্রিটি ডিলিট করতে চান?`,
-        () => {
+        async () => {
             state.transactions = state.transactions.filter(t => t.id !== txnId);
             saveData();
             calculateAll();
-            showToast("ট্রানজেকশন সফলভাবে ডিলিট করা হয়েছে!", "error");
+
+            if (window.firebaseDb) {
+                try {
+                    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js");
+                    await deleteDoc(doc(window.firebaseDb, "transactions", String(txnId)));
+                } catch(e) {
+                    console.error("Firebase delete transaction error:", e);
+                }
+            }
+
+            showToast("ট্রানজেকশন সফলভাবে ডিলিট করা হয়েছে!", "info");
         }
     );
 }
@@ -535,9 +545,23 @@ function addNewNotice() {
     showToast("নতুন নোটিশ যোগ করা হয়েছে!", "success");
 }
 
-function deleteNotice(idx) {
+async function deleteNotice(idx) {
+    const targetNotice = state.notices[idx];
+    const noticeId = targetNotice ? targetNotice.id : null;
+
     state.notices.splice(idx, 1);
     saveData();
+    calculateAll();
+
+    if (noticeId && window.firebaseDb) {
+        try {
+            const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js");
+            await deleteDoc(doc(window.firebaseDb, "notices", String(noticeId)));
+        } catch(e) {
+            console.error("Firebase delete notice error:", e);
+        }
+    }
+
     showToast("নোটিশ মুছে ফেলা হয়েছে!", "info");
 }
 
