@@ -129,9 +129,24 @@ function renderSummaryTable(totalBazar, totalMeals, mealRate, totalSeatRent, ele
 }
 
 function renderTransposedTable(mealRate, elec, gas, water, wifi, khala, waste) {
-    const tbody = document.getElementById('memberTableBody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
+    const tbody = document.getElementById('summaryTableBody');
+    const table = document.querySelector('.horizontal-table');
+    if (!table) return;
+
+    // Dynamically update thead headers to guarantee 100% sync with state.members
+    const thead = table.querySelector('thead');
+    if (thead) {
+        let headerHtml = `<tr><th style="min-width: 170px;">আইটেম / সদস্য</th>`;
+        state.members.forEach(m => {
+            headerHtml += `<th class="text-right">${m.name}</th>`;
+        });
+        headerHtml += `</tr>`;
+        thead.innerHTML = headerHtml;
+    }
+
+    const memberTbody = document.getElementById('memberTableBody');
+    if (!memberTbody) return;
+    memberTbody.innerHTML = '';
 
     const rowConfig = [
         { label: 'কারেন্ট বিল (BDT)', calc: () => elec.toFixed(2) },
@@ -149,7 +164,7 @@ function renderTransposedTable(mealRate, elec, gas, water, wifi, khala, waste) {
         { label: 'সর্বমোট প্রদেয় (ভাড়া বাদে)', isNetPayable: true, rowClass: 'payable-row' },
         { label: 'সিট ভাড়া (BDT)', key: 'rent' },
         { label: 'সর্বমোট জমা', isTotalDeposit: true, rowClass: 'total-dep-row' },
-        { label: '🏠 বাসা ভাড়াসহ সর্বমোট প্রদেয়', isNetPayableWithRent: true, rowClass: 'net-rent-payable-row' }
+        { label: '🏠 মোট প্রদেয় (ভাড়াসহ)', isNetPayableWithRent: true, rowClass: 'net-rent-payable-row' }
     ];
 
     rowConfig.forEach(r => {
@@ -173,7 +188,7 @@ function renderTransposedTable(mealRate, elec, gas, water, wifi, khala, waste) {
         });
 
         tr.innerHTML = html;
-        tbody.appendChild(tr);
+        memberTbody.appendChild(tr);
     });
 }
 

@@ -108,10 +108,10 @@ td { padding: 10px; border-bottom: 1px solid #e2e8f0; color: #334155; white-spac
 
 .horizontal-table th { background: linear-gradient(145deg, #1e40af, #1d4ed8); color: #ffffff; }
 .horizontal-table th:first-child { 
-    position: sticky; left: 0; z-index: 11; background: #1e40af !important; color: #ffffff !important; border-right: 2px solid #cbd5e1; 
+    position: sticky; left: 0; z-index: 21 !important; background: #1e40af !important; color: #ffffff !important; border-right: 2px solid #cbd5e1; 
 }
 .horizontal-table td:first-child { 
-    position: sticky; left: 0; z-index: 10; background: #eef2f6; font-weight: 700; border-right: 2px solid #cbd5e1; 
+    position: sticky; left: 0; z-index: 20 !important; background: #eef2f6; font-weight: 700; border-right: 2px solid #cbd5e1; 
 }
 
 .text-right { text-align: right; }
@@ -151,7 +151,7 @@ td { padding: 10px; border-bottom: 1px solid #e2e8f0; color: #334155; white-spac
     border-right: 2px solid #2563eb !important;
     box-shadow: 0 6px 14px -2px rgba(37, 99, 235, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.9) !important;
     position: relative;
-    z-index: 12 !important;
+    z-index: 5 !important;
     transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -160,6 +160,28 @@ th.highlight-column {
     color: #ffffff !important;
     border-top: 2px solid #2563eb !important;
     border-bottom: 2px solid #2563eb !important;
+    z-index: 6 !important;
+}
+
+/* Custom Scrollbar Styles matching Primary Color */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #e2e8f0;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(145deg, #2563eb, #1d4ed8);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #1e40af;
+}
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #2563eb #e2e8f0;
 }
 
 .eye-btn svg {
@@ -281,7 +303,7 @@ th.highlight-column {
 /* MOBILE RESPONSIVE STYLES (Does not affect Desktop screen) */
 @media (max-width: 640px) {
     body {
-        padding: 10px 8px;
+        padding: 10px 6px;
     }
 
     .clay-card {
@@ -320,54 +342,60 @@ th.highlight-column {
         height: 14px;
     }
 
-    /* Summary Table on Mobile: Show Col 1 & 2 only, Col 3 hidden until scrolled */
+    /* Summary Table on Mobile: 100% width, all 3 columns visible without horizontal scroll */
     #summaryTable {
         width: 100%;
-        min-width: 520px;
+        min-width: 0 !important;
         table-layout: fixed;
+    }
+
+    #summaryTable th, #summaryTable td {
+        padding: 8px 4px;
+        font-size: 11px;
+        word-break: break-word;
+        white-space: normal;
     }
 
     #summaryTable th:nth-child(1), #summaryTable td:nth-child(1) {
-        width: 175px;
-        min-width: 175px;
-        max-width: 175px;
+        width: 38%;
     }
 
     #summaryTable th:nth-child(2), #summaryTable td:nth-child(2) {
-        width: 155px;
-        min-width: 155px;
-        max-width: 155px;
+        width: 31%;
     }
 
     #summaryTable th:nth-child(3), #summaryTable td:nth-child(3) {
-        width: 190px;
-        min-width: 190px;
-        max-width: 190px;
+        width: 31%;
     }
 
-    /* Member Summary Table on Mobile: Sticky Col 1 + exactly 1 member column visible */
+    /* Member Summary Table on Mobile: Sticky Col 1 + member columns */
     .horizontal-table {
         table-layout: fixed;
-        min-width: 1220px;
+        min-width: 1100px;
     }
 
     .horizontal-table th:first-child, .horizontal-table td:first-child {
-        width: 140px;
-        min-width: 140px;
-        max-width: 140px;
+        width: 135px;
+        min-width: 135px;
+        max-width: 135px;
+        font-size: 12px;
+        padding: 8px 6px;
     }
 
     .horizontal-table th:not(:first-child), .horizontal-table td:not(:first-child) {
-        width: 180px;
-        min-width: 180px;
-        max-width: 180px;
+        width: 160px;
+        min-width: 160px;
+        max-width: 160px;
+        font-size: 12px;
+        padding: 8px 6px;
     }
 
     /* Admin Control Panel Drawer on Mobile */
     .admin-drawer {
-        width: 100vw;
-        max-width: 100vw;
-        right: -100vw;
+        width: 100%;
+        max-width: 100%;
+        right: -100%;
+        box-sizing: border-box;
     }
 
     .admin-drawer.open {
@@ -375,11 +403,108 @@ th.highlight-column {
     }
 
     .drawer-header {
-        padding: 14px 16px;
+        padding: 12px 14px;
     }
 
     .drawer-body {
-        padding: 14px;
+        padding: 12px;
+        overflow-x: hidden;
+        box-sizing: border-box;
+    }
+
+    .drawer-inputs-grid, .member-inputs-flex {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .drawer-input {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Txn Page Header Buttons stacked vertically on mobile */
+    #txnPage .txn-page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    #txnPage .txn-page-header .nav-buttons {
+        flex-direction: column;
+        width: 100%;
+        gap: 8px;
+    }
+
+    #txnPage .txn-page-header .nav-buttons .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Excel Toolbar on Mobile */
+    .excel-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 10px;
+    }
+
+    .toolbar-left {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .toolbar-left .search-input-wrapper {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .toolbar-left .search-input-wrapper input {
+        width: 100%;
+        font-size: 12px;
+    }
+
+    .toolbar-left #txnMemberFilter {
+        flex: 1;
+        min-width: 0;
+        font-size: 12px;
+    }
+
+    .toolbar-right {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .export-title {
+        display: block;
+    }
+
+    .export-btns-group {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .full-csv-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .export-sub-btns {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .export-sub-btns .btn {
+        flex: 1;
+        justify-content: center;
     }
 
     .toast-container {
@@ -396,16 +521,6 @@ th.highlight-column {
     .modal-content {
         width: 90vw;
         max-width: 350px;
-    }
-
-    .excel-toolbar {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .toolbar-left, .toolbar-right {
-        width: 100%;
-        justify-content: space-between;
     }
 }
 
