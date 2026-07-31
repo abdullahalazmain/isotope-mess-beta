@@ -1,5 +1,6 @@
 let state = {
     isAdmin: false,
+    adminPassword: "isotope@12azmain",
     customAdjLabel: "ফ্রিজ সমন্বয়",
     fixedCosts: {
         electricity: 1500,
@@ -472,7 +473,8 @@ async function saveData() {
             // 1. Save settings
             await setDoc(doc(window.firebaseDb, "settings", "config"), {
                 fixedCosts: state.fixedCosts,
-                customAdjLabel: state.customAdjLabel
+                customAdjLabel: state.customAdjLabel,
+                adminPassword: state.adminPassword || "isotope@12azmain"
             });
 
             // 2. Save members
@@ -516,20 +518,47 @@ function turnOffAdmin() {
     showToast("এডমিন মোড বন্ধ করা হয়েছে", "info");
 }
 
-function openAdminModal() { document.getElementById('adminModal').style.display = 'flex'; }
-function closeAdminModal() { document.getElementById('adminModal').style.display = 'none'; }
+function openAdminModal() { 
+    showChangePassView(false);
+    document.getElementById('adminPassword').value = '';
+    document.getElementById('adminModal').style.display = 'flex'; 
+}
 
-function togglePasswordVisibility() {
-    const input = document.getElementById('adminPassword');
-    const eyeSvg = document.getElementById('eyeIconSvg');
-    if(input.type === 'password') {
+function closeAdminModal() { 
+    document.getElementById('adminModal').style.display = 'none'; 
+}
+
+function showChangePassView(show) {
+    const title = document.getElementById('adminModalTitle');
+    const unlockView = document.getElementById('adminUnlockView');
+    const changePassView = document.getElementById('adminChangePassView');
+
+    if (show) {
+        if (title) title.innerText = "পাসওয়ার্ড পরিবর্তন করুন";
+        if (unlockView) unlockView.style.display = "none";
+        if (changePassView) changePassView.style.display = "block";
+        document.getElementById('currAdminPass').value = '';
+        document.getElementById('newAdminPass').value = '';
+    } else {
+        if (title) title.innerText = "এডমিন সিকিউরিটি এক্সেস";
+        if (unlockView) unlockView.style.display = "block";
+        if (changePassView) changePassView.style.display = "none";
+    }
+}
+
+function togglePasswordVisibility(inputId = 'adminPassword', eyeIconId = 'eyeIconSvg') {
+    const input = document.getElementById(inputId);
+    const eyeSvg = document.getElementById(eyeIconId);
+    if (!input) return;
+
+    if (input.type === 'password') {
         input.type = 'text';
-        if(eyeSvg) {
+        if (eyeSvg) {
             eyeSvg.innerHTML = '<path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2z"/>';
         }
     } else {
         input.type = 'password';
-        if(eyeSvg) {
+        if (eyeSvg) {
             eyeSvg.innerHTML = '<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>';
         }
     }
@@ -582,7 +611,8 @@ function highlightMemberColumn(memberName) {
 
 function verifyAdmin() {
     const pass = document.getElementById('adminPassword').value;
-    if(pass === "isotope@12azmain") {
+    const currentPass = state.adminPassword || "isotope@12azmain";
+    if (pass === currentPass) {
         state.isAdmin = true;
         updateAdminUIState();
         closeAdminModal();
@@ -592,6 +622,30 @@ function verifyAdmin() {
     } else {
         showToast("ভুল পাসওয়ার্ড!", "error");
     }
+}
+
+function submitPasswordChange() {
+    const currPass = document.getElementById('currAdminPass').value;
+    const newPass = document.getElementById('newAdminPass').value;
+    const actualCurrentPass = state.adminPassword || "isotope@12azmain";
+
+    if (!currPass) {
+        showToast("বর্তমান পাসওয়ার্ড লিখুন!", "error");
+        return;
+    }
+    if (currPass !== actualCurrentPass) {
+        showToast("বর্তমান পাসওয়ার্ড সঠিক নয়!", "error");
+        return;
+    }
+    if (!newPass || newPass.trim().length < 4) {
+        showToast("নতুন পাসওয়ার্ড অন্তত ৪ অক্ষরের হতে হবে!", "error");
+        return;
+    }
+
+    state.adminPassword = newPass.trim();
+    saveData();
+    showToast("পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!", "success");
+    showChangePassView(false);
 }
 
 function updateAdminUIState() {
@@ -638,6 +692,7 @@ async function loadFirebaseData() {
                     const cfg = configSnap.data();
                     state.fixedCosts = cfg.fixedCosts || state.fixedCosts;
                     state.customAdjLabel = cfg.customAdjLabel || state.customAdjLabel;
+                    if (cfg.adminPassword) state.adminPassword = cfg.adminPassword;
                 }
                 if(!membersSnap.empty) {
                     state.members = [];
