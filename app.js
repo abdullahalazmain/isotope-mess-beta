@@ -600,10 +600,10 @@ function highlightMemberColumn(memberName) {
             
             let targetScrollLeft = Math.max(0, cellCenter - viewportCenter);
 
-            // If not the last member, scroll slightly more (~1px offset deduction / ~0.7mm less deduction)
+            // If not the last member, scroll less to the left (~6px / 1mm) as requested
             const isLastMember = (memberIdx === state.members.length - 1);
             if (!isLastMember) {
-                targetScrollLeft = Math.max(0, targetScrollLeft - 1);
+                targetScrollLeft = Math.max(0, targetScrollLeft - 6);
             }
 
             container.scrollTo({
