@@ -310,11 +310,6 @@ function submitDepositTransaction() {
         return;
     }
 
-    const memberObj = state.members.find(m => m.name === memberName);
-    if(memberObj) {
-        memberObj.bazarDeposit = Number(memberObj.bazarDeposit) + amount;
-    }
-
     const now = new Date();
     const formattedDate = `${now.toLocaleDateString('en-GB')}, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     
@@ -330,6 +325,7 @@ function submitDepositTransaction() {
     document.getElementById('txnNoteInput').value = '';
 
     saveData();
+    calculateAll();
     showToast(`${memberName}-এর জন্য BDT ${amount} সফলভাবে জমা হয়েছে!`, "success");
 }
 
@@ -341,13 +337,9 @@ function deleteTransaction(txnId) {
         "ট্রানজেকশন ডিলিট",
         `আপনি কি নিশ্চিত যে ${targetTxn.member}-এর BDT ${targetTxn.amount} জমার এন্ট্রিটি ডিলিট করতে চান?`,
         () => {
-            const memberObj = state.members.find(m => m.name === targetTxn.member);
-            if(memberObj) {
-                memberObj.bazarDeposit = Math.max(0, Number(memberObj.bazarDeposit) - Number(targetTxn.amount));
-            }
-
             state.transactions = state.transactions.filter(t => t.id !== txnId);
             saveData();
+            calculateAll();
             showToast("ট্রানজেকশন সফলভাবে ডিলিট করা হয়েছে!", "error");
         }
     );
