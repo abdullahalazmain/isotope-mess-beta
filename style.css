@@ -278,6 +278,137 @@ th.highlight-column {
 .toast-error { border-left-color: #dc2626; }
 .toast-info { border-left-color: #2563eb; }
 
+/* MOBILE RESPONSIVE STYLES (Does not affect Desktop screen) */
+@media (max-width: 640px) {
+    body {
+        padding: 10px 8px;
+    }
+
+    .clay-card {
+        padding: 14px 10px;
+        border-radius: 16px;
+        margin-bottom: 18px;
+    }
+
+    /* Navbar & Buttons in single row on mobile */
+    .navbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .nav-buttons {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        width: 100%;
+        gap: 8px;
+        justify-content: space-between;
+    }
+
+    .nav-buttons .btn {
+        flex: 1;
+        padding: 8px 4px;
+        font-size: 11.5px;
+        white-space: nowrap;
+        justify-content: center;
+        letter-spacing: -0.2px;
+    }
+
+    .nav-buttons .btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* Summary Table on Mobile: Show Col 1 & 2 only, Col 3 hidden until scrolled */
+    #summaryTable {
+        width: 100%;
+        min-width: 520px;
+        table-layout: fixed;
+    }
+
+    #summaryTable th:nth-child(1), #summaryTable td:nth-child(1) {
+        width: 175px;
+        min-width: 175px;
+        max-width: 175px;
+    }
+
+    #summaryTable th:nth-child(2), #summaryTable td:nth-child(2) {
+        width: 155px;
+        min-width: 155px;
+        max-width: 155px;
+    }
+
+    #summaryTable th:nth-child(3), #summaryTable td:nth-child(3) {
+        width: 190px;
+        min-width: 190px;
+        max-width: 190px;
+    }
+
+    /* Member Summary Table on Mobile: Sticky Col 1 + exactly 1 member column visible */
+    .horizontal-table {
+        table-layout: fixed;
+        min-width: 1220px;
+    }
+
+    .horizontal-table th:first-child, .horizontal-table td:first-child {
+        width: 140px;
+        min-width: 140px;
+        max-width: 140px;
+    }
+
+    .horizontal-table th:not(:first-child), .horizontal-table td:not(:first-child) {
+        width: 180px;
+        min-width: 180px;
+        max-width: 180px;
+    }
+
+    /* Admin Control Panel Drawer on Mobile */
+    .admin-drawer {
+        width: 100vw;
+        max-width: 100vw;
+        right: -100vw;
+    }
+
+    .admin-drawer.open {
+        right: 0;
+    }
+
+    .drawer-header {
+        padding: 14px 16px;
+    }
+
+    .drawer-body {
+        padding: 14px;
+    }
+
+    .toast-container {
+        right: 10px;
+        left: 10px;
+        bottom: 15px;
+    }
+
+    .toast {
+        min-width: auto;
+        width: 100%;
+    }
+
+    .modal-content {
+        width: 90vw;
+        max-width: 350px;
+    }
+
+    .excel-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .toolbar-left, .toolbar-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
 @media print {
     body { background: white; padding: 0; }
     #mainDashboard, .admin-drawer, .modal, .excel-toolbar, .nav-buttons, #thAdminAction, .td-admin-action, .toast-container { display: none !important; }
