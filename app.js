@@ -5,6 +5,8 @@ let state = {
     fixedCosts: {
         electricity: 1500,
         gas: 1800,
+        waterBottleCount: 40,
+        waterBottlePrice: 20,
         waterBill: 800,
         wifi: 700,
         khala: 2500,
@@ -15,8 +17,8 @@ let state = {
         { name: "রিয়াজ", meals: 42, bazarDeposit: 2299, rent: 2200, prevAdj: 96.67, fridgeAdj: -120 },
         { name: "সাকিব", meals: 5, bazarDeposit: 0, rent: 2000, prevAdj: -140.67, fridgeAdj: 480 },
         { name: "ওমর", meals: 0, bazarDeposit: 0, rent: 2000, prevAdj: -143.33, fridgeAdj: 0 },
-        { name: "ফারেছ", meals: 43, bazarDeposit: 3391, rent: 1800, prevAdj: 96.67, fridgeAdj: -120 },
-        { name: "নাফিজ", meals: 53, bazarDeposit: 0, rent: 1800, prevAdj: -472.26, fridgeAdj: -120 }
+        { name: "নাফিজ", meals: 53, bazarDeposit: 0, rent: 1800, prevAdj: -472.26, fridgeAdj: -120 },
+        { name: "ফারেছ", meals: 43, bazarDeposit: 3391, rent: 1800, prevAdj: 96.67, fridgeAdj: -120 }
     ],
     notices: [
         { id: 1, text: "🚨 জুলাই ২০২৬ বিল পরিশোধের সময়সীমা: আগামী ৫ তারিখের মধ্যে ইউটিলিটি ও ৮ তারিখের মধ্যে বাসা ভাড়া দিতে হবে। মোট বাসা ভাড়া ১২,০০০ টাকা।", type: "notice-urgent" },
@@ -76,14 +78,29 @@ if (confirmAgreeBtn) {
     confirmAgreeBtn.addEventListener('click', () => closeConfirmModal(true));
 }
 
-function calculateAll() {
-    // 1. Sync member bazarDeposit with total transactions in state.transactions
-    state.members.forEach(m => {
-        const memberTxns = state.transactions.filter(t => t.member === m.name);
-        if (memberTxns.length > 0) {
-            m.bazarDeposit = memberTxns.reduce((sum, t) => sum + Number(t.amount || 0), 0);
-        }
+function ensureMemberOrder() {
+    const order = ["আজমাইন", "রিয়াজ", "সাকিব", "ওমর", "নাফিজ", "ফারেছ"];
+    if (!state.members) return;
+    state.members.sort((a, b) => {
+        let ia = order.findIndex(o => o === a.name);
+        let ib = order.findIndex(o => o === b.name);
+        if (ia === -1) ia = order.findIndex(o => a.name.includes(o.substring(0, 3)));
+        if (ib === -1) ib = order.findIndex(o => b.name.includes(o.substring(0, 3)));
+        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
     });
+}
+
+function updateWaterBillCalc() {
+    const cnt = Number(document.getElementById('inp_water_count')?.value || 0);
+    const prc = Number(document.getElementById('inp_water_price')?.value || 0);
+    const waterInp = document.getElementById('inp_water');
+    if (waterInp) {
+        waterInp.value = cnt * prc;
+    }
+}
+
+function calculateAll() {
+    ensureMemberOrder();
 
     let memberCount = state.members.length || 1;
     let elecPerHead = Number(state.fixedCosts.electricity || 0) / memberCount;
@@ -96,7 +113,10 @@ function calculateAll() {
     let totalMeals = state.members.reduce((acc, m) => acc + Number(m.meals || 0), 0);
     let totalBazar = state.members.reduce((acc, m) => acc + Number(m.bazarDeposit || 0), 0);
     let totalSeatRent = state.members.reduce((acc, m) => acc + Number(m.rent || 0), 0);
-    let mealRate = totalMeals > 0 ? (totalBazar / totalMeals) : 0;
+    
+    // Meal rate rounded to 2 decimal places to guarantee matching (meals * rate) calculation
+    let rawMealRate = totalMeals > 0 ? (totalBazar / totalMeals) : 0;
+    let mealRate = Math.round(rawMealRate * 100) / 100;
 
     renderSummaryTable(totalBazar, totalMeals, mealRate, totalSeatRent, elecPerHead, gasPerHead, waterPerHead, wifiPerHead, khalaPerHead, wastePerHead);
     renderTransposedTable(mealRate, elecPerHead, gasPerHead, waterPerHead, wifiPerHead, khalaPerHead, wastePerHead);
@@ -169,13 +189,13 @@ function renderTransposedTable(mealRate, elec, gas, water, wifi, khala, waste) {
         { label: 'ময়লার বিল (BDT)', calc: () => waste.toFixed(2) },
         { label: 'মিল সংখ্যা', key: 'meals' },
         { label: 'মিল খরচ (BDT)', calc: (m) => (Number(m.meals || 0) * mealRate).toFixed(2) },
-        { label: 'বাজার জমা (BDT)', key: 'bazarDeposit', isDeposit: true },
         { label: 'গত মাসের সমন্বয় (BDT)', key: 'prevAdj', isRawFormatted: true },
         { label: `অন্যান্য (${state.customAdjLabel}) (BDT)`, key: 'fridgeAdj', isRawFormatted: true },
         { label: 'সর্বমোট খরচ (ভাড়া বাদে)', isTotalExp: true, rowClass: 'total-exp-row' },
+        { label: 'বাজার জমা (BDT)', key: 'bazarDeposit', isDeposit: true },
+        { label: 'সর্বমোট জমা (BDT)', isTotalDeposit: true, rowClass: 'total-dep-row' },
         { label: 'সর্বমোট প্রদেয় (ভাড়া বাদে)', isNetPayable: true, rowClass: 'payable-row' },
         { label: 'সিট ভাড়া (BDT)', key: 'rent' },
-        { label: 'সর্বমোট জমা', isTotalDeposit: true, rowClass: 'total-dep-row' },
         { label: '🏠 মোট প্রদেয় (ভাড়াসহ)', isNetPayableWithRent: true, rowClass: 'net-rent-payable-row' }
     ];
 
@@ -191,12 +211,21 @@ function renderTransposedTable(mealRate, elec, gas, water, wifi, khala, waste) {
             let fridgeNum = Number(m.fridgeAdj || 0);
             let rentNum = Number(m.rent || 0);
 
-            let mealExpense = mealsNum * mealRate;
-            let totalExpenseExceptRent = mealExpense + elec + gas + water + wifi + khala + waste;
-            let netPayableWithoutRent = totalExpenseExceptRent - bazarNum - prevNum - fridgeNum;
+            let mealExpense = Number((mealsNum * mealRate).toFixed(2));
+            
+            // Total expense except rent includes meals, utility bills, prev adjustment, and fridge/other adjustment
+            let totalExpenseExceptRent = mealExpense + elec + gas + water + wifi + khala + waste + prevNum + fridgeNum;
+            
+            // Member total deposit from Transaction log
+            let memberTotalDeposit = state.transactions
+                .filter(t => t.member === m.name)
+                .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+            // Net payable without rent = total expense except rent - total deposit
+            let netPayableWithoutRent = totalExpenseExceptRent - memberTotalDeposit;
 
             if(r.isTotalExp) html += `<td class="text-right font-bold">BDT ${totalExpenseExceptRent.toFixed(2)}</td>`;
-            else if(r.isTotalDeposit) html += `<td class="text-right font-bold text-green">BDT ${bazarNum.toFixed(2)}</td>`;
+            else if(r.isTotalDeposit) html += `<td class="text-right font-bold text-green">BDT ${memberTotalDeposit.toFixed(2)}</td>`;
             else if(r.isDeposit) html += `<td class="text-right font-bold text-green">BDT ${bazarNum.toFixed(2)}</td>`;
             else if(r.isNetPayable) html += `<td class="text-right font-bold">${formatValueWithColor(netPayableWithoutRent)}</td>`;
             else if(r.isNetPayableWithRent) html += `<td class="text-right font-bold">${formatValueWithColor(netPayableWithoutRent + rentNum)}</td>`;
@@ -382,13 +411,35 @@ function renderDrawerInputs() {
 
     const fixedBox = document.getElementById('drawerFixedCostsInputs');
     if(fixedBox) {
+        let wbCount = state.fixedCosts.waterBottleCount !== undefined ? state.fixedCosts.waterBottleCount : 40;
+        let wbPrice = state.fixedCosts.waterBottlePrice !== undefined ? state.fixedCosts.waterBottlePrice : 20;
+        let wbTotal = state.fixedCosts.waterBill !== undefined ? state.fixedCosts.waterBill : (wbCount * wbPrice);
+
         fixedBox.innerHTML = `
-            <div class="input-group"><label>কারেন্ট বিল</label><input type="number" id="inp_elec" class="drawer-input" value="${state.fixedCosts.electricity}"></div>
-            <div class="input-group"><label>গ্যাস বিল</label><input type="number" id="inp_gas" class="drawer-input" value="${state.fixedCosts.gas}"></div>
-            <div class="input-group"><label>পানির বিল</label><input type="number" id="inp_water" class="drawer-input" value="${state.fixedCosts.waterBill}"></div>
-            <div class="input-group"><label>ওয়াইফাই বিল</label><input type="number" id="inp_wifi" class="drawer-input" value="${state.fixedCosts.wifi}"></div>
-            <div class="input-group"><label>খালার বিল</label><input type="number" id="inp_khala" class="drawer-input" value="${state.fixedCosts.khala}"></div>
-            <div class="input-group"><label>ময়লার বিল</label><input type="number" id="inp_waste" class="drawer-input" value="${state.fixedCosts.waste}"></div>
+            <div class="input-group"><label>কারেন্ট বিল (BDT)</label><input type="number" id="inp_elec" class="drawer-input" value="${state.fixedCosts.electricity}"></div>
+            <div class="input-group"><label>গ্যাস বিল (BDT)</label><input type="number" id="inp_gas" class="drawer-input" value="${state.fixedCosts.gas}"></div>
+            
+            <div class="input-group water-bill-group" style="grid-column: 1 / -1; background: rgba(59, 130, 246, 0.05); padding: 10px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.15);">
+                <label style="font-weight: 700; color: #1e40af; margin-bottom: 6px; display: block;">💧 পানির বিল হিসাব:</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                    <div>
+                        <label style="font-size: 11px; color: #475569; display: block; margin-bottom: 2px;">বোতলের সংখ্যা</label>
+                        <input type="number" id="inp_water_count" class="drawer-input" value="${wbCount}" oninput="updateWaterBillCalc()">
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; color: #475569; display: block; margin-bottom: 2px;">প্রতি বোতল (BDT)</label>
+                        <input type="number" id="inp_water_price" class="drawer-input" value="${wbPrice}" oninput="updateWaterBillCalc()">
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; color: #1e40af; font-weight: 600; display: block; margin-bottom: 2px;">মোট পানির বিল</label>
+                        <input type="number" id="inp_water" class="drawer-input" value="${wbTotal}" style="font-weight: bold; color: #1e40af;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group"><label>ওয়াইফাই বিল (BDT)</label><input type="number" id="inp_wifi" class="drawer-input" value="${state.fixedCosts.wifi}"></div>
+            <div class="input-group"><label>খালার বিল (BDT)</label><input type="number" id="inp_khala" class="drawer-input" value="${state.fixedCosts.khala}"></div>
+            <div class="input-group"><label>ময়লার বিল (BDT)</label><input type="number" id="inp_waste" class="drawer-input" value="${state.fixedCosts.waste}"></div>
         `;
     }
 
@@ -434,20 +485,29 @@ function renderDrawerInputs() {
 function saveCustomAdjLabel() {
     state.customAdjLabel = document.getElementById('customAdjLabelInput').value || "অন্যান্য";
     saveData();
-    renderDrawerInputs();
+    calculateAll();
     showToast("অন্যান্য এডজাস্টমেন্টের নাম সফলভাবে সেভ করা হয়েছে!", "success");
 }
 
 function saveFixedCosts() {
-    state.fixedCosts.electricity = Number(document.getElementById('inp_elec').value);
-    state.fixedCosts.gas = Number(document.getElementById('inp_gas').value);
-    state.fixedCosts.waterBill = Number(document.getElementById('inp_water').value);
-    state.fixedCosts.wifi = Number(document.getElementById('inp_wifi').value);
-    state.fixedCosts.khala = Number(document.getElementById('inp_khala').value);
-    state.fixedCosts.waste = Number(document.getElementById('inp_waste').value);
+    state.fixedCosts.electricity = Number(document.getElementById('inp_elec').value || 0);
+    state.fixedCosts.gas = Number(document.getElementById('inp_gas').value || 0);
+    
+    if (document.getElementById('inp_water_count')) {
+        state.fixedCosts.waterBottleCount = Number(document.getElementById('inp_water_count').value || 0);
+    }
+    if (document.getElementById('inp_water_price')) {
+        state.fixedCosts.waterBottlePrice = Number(document.getElementById('inp_water_price').value || 0);
+    }
+    state.fixedCosts.waterBill = Number(document.getElementById('inp_water').value || 0);
+
+    state.fixedCosts.wifi = Number(document.getElementById('inp_wifi').value || 0);
+    state.fixedCosts.khala = Number(document.getElementById('inp_khala').value || 0);
+    state.fixedCosts.waste = Number(document.getElementById('inp_waste').value || 0);
     state.customAdjLabel = document.getElementById('customAdjLabelInput').value || "অন্যান্য";
 
     saveData();
+    calculateAll();
     showToast("ইউটিলিটি খরচ সেভ করা হয়েছে!", "success");
 }
 
@@ -459,31 +519,13 @@ function saveMemberData(idx) {
     const newFridge = Number(document.getElementById(`mem_fridge_${idx}`).value || 0);
 
     state.members[idx].meals = newMeals;
+    state.members[idx].bazarDeposit = newBazar;
     state.members[idx].prevAdj = newPrev;
     state.members[idx].fridgeAdj = newFridge;
     state.customAdjLabel = document.getElementById('customAdjLabelInput').value || "অন্যান্য";
 
-    const currentTxnTotal = state.transactions
-        .filter(t => t.member === memberName)
-        .reduce((sum, t) => sum + Number(t.amount || 0), 0);
-
-    if (newBazar !== currentTxnTotal) {
-        const diff = newBazar - currentTxnTotal;
-        const now = new Date();
-        const formattedDate = `${now.toLocaleDateString('en-GB')}, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-        state.transactions.push({
-            id: Date.now(),
-            date: formattedDate,
-            member: memberName,
-            note: "এডমিন ড্যাশবোর্ড সমন্বয়",
-            amount: diff
-        });
-        state.members[idx].bazarDeposit = newBazar;
-    } else {
-        state.members[idx].bazarDeposit = newBazar;
-    }
-
     saveData();
+    calculateAll();
     showToast(`${memberName}-এর তথ্য আপডেট করা হয়েছে!`, "success");
 }
 
