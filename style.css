@@ -381,9 +381,9 @@ th.highlight-column {
     .horizontal-table th:first-child, .horizontal-table td:first-child {
         position: sticky;
         left: 0;
-        width: 165px !important;
-        min-width: 165px !important;
-        max-width: 165px !important;
+        width: 170px !important;
+        min-width: 170px !important;
+        max-width: 170px !important;
         box-sizing: border-box !important;
         font-size: 12px;
         padding: 8px 6px;
