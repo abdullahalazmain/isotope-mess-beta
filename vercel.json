@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/logs", "destination": "/logs.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
