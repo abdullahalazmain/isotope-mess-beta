@@ -77,16 +77,25 @@ if (confirmAgreeBtn) {
 }
 
 function calculateAll() {
-    let elecPerHead = state.fixedCosts.electricity / 6;
-    let gasPerHead = state.fixedCosts.gas / 6;
-    let waterPerHead = state.fixedCosts.waterBill / 6;
-    let wifiPerHead = state.fixedCosts.wifi / 6;
-    let khalaPerHead = state.fixedCosts.khala / 6;
-    let wastePerHead = state.fixedCosts.waste / 6;
+    // 1. Sync member bazarDeposit with total transactions in state.transactions
+    state.members.forEach(m => {
+        const memberTxns = state.transactions.filter(t => t.member === m.name);
+        if (memberTxns.length > 0) {
+            m.bazarDeposit = memberTxns.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+        }
+    });
 
-    let totalMeals = state.members.reduce((acc, m) => acc + Number(m.meals), 0);
-    let totalBazar = state.members.reduce((acc, m) => acc + Number(m.bazarDeposit), 0);
-    let totalSeatRent = state.members.reduce((acc, m) => acc + Number(m.rent), 0);
+    let memberCount = state.members.length || 1;
+    let elecPerHead = Number(state.fixedCosts.electricity || 0) / memberCount;
+    let gasPerHead = Number(state.fixedCosts.gas || 0) / memberCount;
+    let waterPerHead = Number(state.fixedCosts.waterBill || 0) / memberCount;
+    let wifiPerHead = Number(state.fixedCosts.wifi || 0) / memberCount;
+    let khalaPerHead = Number(state.fixedCosts.khala || 0) / memberCount;
+    let wastePerHead = Number(state.fixedCosts.waste || 0) / memberCount;
+
+    let totalMeals = state.members.reduce((acc, m) => acc + Number(m.meals || 0), 0);
+    let totalBazar = state.members.reduce((acc, m) => acc + Number(m.bazarDeposit || 0), 0);
+    let totalSeatRent = state.members.reduce((acc, m) => acc + Number(m.rent || 0), 0);
     let mealRate = totalMeals > 0 ? (totalBazar / totalMeals) : 0;
 
     renderSummaryTable(totalBazar, totalMeals, mealRate, totalSeatRent, elecPerHead, gasPerHead, waterPerHead, wifiPerHead, khalaPerHead, wastePerHead);
@@ -109,17 +118,19 @@ function renderSummaryTable(totalBazar, totalMeals, mealRate, totalSeatRent, ele
     if (!tbody) return;
     tbody.innerHTML = '';
 
+    const memberCount = state.members.length || 1;
+
     const items = [
         { label: 'মোট বাজার খরচ', total: `BDT ${totalBazar.toFixed(2)}`, split: 'জমা অনুযায়ী' },
-        { label: 'মোট মিল সংখ্যা', total: `${totalMeals} টি`, split: '৬ জন সদস্য' },
+        { label: 'মোট মিল সংখ্যা', total: `${totalMeals} টি`, split: `${memberCount} জন সদস্য` },
         { label: 'মিল রেট (Meal Rate)', total: `BDT ${mealRate.toFixed(2)}`, split: 'অটো ক্যালকুলেটেড' },
         { label: 'মোট সিট ভাড়া', total: `BDT ${totalSeatRent.toFixed(2)}`, split: 'নির্দিষ্ট সিট রেট' },
-        { label: 'কারেন্ট বিল', total: `BDT ${state.fixedCosts.electricity}`, split: `BDT ${elec.toFixed(2)} (৬ জন)` },
-        { label: 'গ্যাস বিল', total: `BDT ${state.fixedCosts.gas}`, split: `BDT ${gas.toFixed(2)} (৬ জন)` },
-        { label: 'পানির বিল', total: `BDT ${state.fixedCosts.waterBill}`, split: `BDT ${water.toFixed(2)} (৬ জন)` },
-        { label: 'ওয়াইফাই বিল', total: `BDT ${state.fixedCosts.wifi}`, split: `BDT ${wifi.toFixed(2)} (৬ জন)` },
-        { label: 'খালার বিল', total: `BDT ${state.fixedCosts.khala}`, split: `BDT ${khala.toFixed(2)} (৬ জন)` },
-        { label: 'ময়লার বিল', total: `BDT ${state.fixedCosts.waste}`, split: `BDT ${waste.toFixed(2)} (৬ জন)` }
+        { label: 'কারেন্ট বিল', total: `BDT ${Number(state.fixedCosts.electricity || 0).toFixed(2)}`, split: `BDT ${elec.toFixed(2)} (${memberCount} জন)` },
+        { label: 'গ্যাস বিল', total: `BDT ${Number(state.fixedCosts.gas || 0).toFixed(2)}`, split: `BDT ${gas.toFixed(2)} (${memberCount} জন)` },
+        { label: 'পানির বিল', total: `BDT ${Number(state.fixedCosts.waterBill || 0).toFixed(2)}`, split: `BDT ${water.toFixed(2)} (${memberCount} জন)` },
+        { label: 'ওয়াইফাই বিল', total: `BDT ${Number(state.fixedCosts.wifi || 0).toFixed(2)}`, split: `BDT ${wifi.toFixed(2)} (${memberCount} জন)` },
+        { label: 'খালার বিল', total: `BDT ${Number(state.fixedCosts.khala || 0).toFixed(2)}`, split: `BDT ${khala.toFixed(2)} (${memberCount} জন)` },
+        { label: 'ময়লার বিল', total: `BDT ${Number(state.fixedCosts.waste || 0).toFixed(2)}`, split: `BDT ${waste.toFixed(2)} (${memberCount} জন)` }
     ];
 
     items.forEach(item => {
@@ -157,7 +168,7 @@ function renderTransposedTable(mealRate, elec, gas, water, wifi, khala, waste) {
         { label: 'খালার বিল (BDT)', calc: () => khala.toFixed(2) },
         { label: 'ময়লার বিল (BDT)', calc: () => waste.toFixed(2) },
         { label: 'মিল সংখ্যা', key: 'meals' },
-        { label: 'মিল খরচ (BDT)', calc: (m) => (m.meals * mealRate).toFixed(2) },
+        { label: 'মিল খরচ (BDT)', calc: (m) => (Number(m.meals || 0) * mealRate).toFixed(2) },
         { label: 'বাজার জমা (BDT)', key: 'bazarDeposit', isDeposit: true },
         { label: 'গত মাসের সমন্বয় (BDT)', key: 'prevAdj', isRawFormatted: true },
         { label: `অন্যান্য (${state.customAdjLabel}) (BDT)`, key: 'fridgeAdj', isRawFormatted: true },
@@ -174,15 +185,21 @@ function renderTransposedTable(mealRate, elec, gas, water, wifi, khala, waste) {
         let html = `<td>${r.label}</td>`;
 
         state.members.forEach((m) => {
-            let mealExpense = m.meals * mealRate;
+            let mealsNum = Number(m.meals || 0);
+            let bazarNum = Number(m.bazarDeposit || 0);
+            let prevNum = Number(m.prevAdj || 0);
+            let fridgeNum = Number(m.fridgeAdj || 0);
+            let rentNum = Number(m.rent || 0);
+
+            let mealExpense = mealsNum * mealRate;
             let totalExpenseExceptRent = mealExpense + elec + gas + water + wifi + khala + waste;
-            let netPayableWithoutRent = totalExpenseExceptRent - m.bazarDeposit - m.prevAdj - m.fridgeAdj;
+            let netPayableWithoutRent = totalExpenseExceptRent - bazarNum - prevNum - fridgeNum;
 
             if(r.isTotalExp) html += `<td class="text-right font-bold">BDT ${totalExpenseExceptRent.toFixed(2)}</td>`;
-            else if(r.isTotalDeposit) html += `<td class="text-right font-bold text-green">BDT ${Number(m.bazarDeposit).toFixed(2)}</td>`;
-            else if(r.isDeposit) html += `<td class="text-right font-bold text-green">BDT ${Number(m.bazarDeposit).toFixed(2)}</td>`;
+            else if(r.isTotalDeposit) html += `<td class="text-right font-bold text-green">BDT ${bazarNum.toFixed(2)}</td>`;
+            else if(r.isDeposit) html += `<td class="text-right font-bold text-green">BDT ${bazarNum.toFixed(2)}</td>`;
             else if(r.isNetPayable) html += `<td class="text-right font-bold">${formatValueWithColor(netPayableWithoutRent)}</td>`;
-            else if(r.isNetPayableWithRent) html += `<td class="text-right font-bold">${formatValueWithColor(netPayableWithoutRent + Number(m.rent))}</td>`;
+            else if(r.isNetPayableWithRent) html += `<td class="text-right font-bold">${formatValueWithColor(netPayableWithoutRent + rentNum)}</td>`;
             else if(r.isRawFormatted) html += `<td class="text-right">${m[r.key]}</td>`;
             else if(r.calc) html += `<td class="text-right">${r.calc(m)}</td>`;
             else html += `<td class="text-right ${r.class || ''}">${m[r.key]}</td>`;
@@ -435,14 +452,39 @@ function saveFixedCosts() {
 }
 
 function saveMemberData(idx) {
-    state.members[idx].meals = Number(document.getElementById(`mem_meals_${idx}`).value);
-    state.members[idx].bazarDeposit = Number(document.getElementById(`mem_bazar_${idx}`).value);
-    state.members[idx].prevAdj = Number(document.getElementById(`mem_prev_${idx}`).value);
-    state.members[idx].fridgeAdj = Number(document.getElementById(`mem_fridge_${idx}`).value);
+    const memberName = state.members[idx].name;
+    const newMeals = Number(document.getElementById(`mem_meals_${idx}`).value || 0);
+    const newBazar = Number(document.getElementById(`mem_bazar_${idx}`).value || 0);
+    const newPrev = Number(document.getElementById(`mem_prev_${idx}`).value || 0);
+    const newFridge = Number(document.getElementById(`mem_fridge_${idx}`).value || 0);
+
+    state.members[idx].meals = newMeals;
+    state.members[idx].prevAdj = newPrev;
+    state.members[idx].fridgeAdj = newFridge;
     state.customAdjLabel = document.getElementById('customAdjLabelInput').value || "অন্যান্য";
 
+    const currentTxnTotal = state.transactions
+        .filter(t => t.member === memberName)
+        .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+    if (newBazar !== currentTxnTotal) {
+        const diff = newBazar - currentTxnTotal;
+        const now = new Date();
+        const formattedDate = `${now.toLocaleDateString('en-GB')}, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        state.transactions.push({
+            id: Date.now(),
+            date: formattedDate,
+            member: memberName,
+            note: "এডমিন ড্যাশবোর্ড সমন্বয়",
+            amount: diff
+        });
+        state.members[idx].bazarDeposit = newBazar;
+    } else {
+        state.members[idx].bazarDeposit = newBazar;
+    }
+
     saveData();
-    showToast(`${state.members[idx].name}-এর তথ্য আপডেট করা হয়েছে!`, "success");
+    showToast(`${memberName}-এর তথ্য আপডেট করা হয়েছে!`, "success");
 }
 
 function addNewNotice() {
