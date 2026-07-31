@@ -128,7 +128,7 @@ function calculateAll() {
 function formatValueWithColor(num, isCurrency = true) {
     let formattedNum = Math.abs(num).toFixed(2);
     let prefix = isCurrency ? "BDT " : "";
-    if (num > 0) return `<span class="val-positive">${prefix}${formattedNum} (প্রদেয়)</span>`;
+    if (num > 0) return `<span class="val-positive">${prefix}${formattedNum} (বকেয়া)</span>`;
     if (num < 0) return `<span class="val-negative">-${prefix}${formattedNum} (ফেরত)</span>`;
     return `<span>${prefix}0.00</span>`;
 }
@@ -193,10 +193,10 @@ function renderTransposedTable(mealRate, elec, gas, water, wifi, khala, waste) {
         { label: `অন্যান্য (${state.customAdjLabel}) (BDT)`, key: 'fridgeAdj', isRawFormatted: true },
         { label: 'সর্বমোট খরচ (ভাড়া বাদে)', isTotalExp: true, rowClass: 'total-exp-row' },
         { label: 'বাজার জমা (BDT)', key: 'bazarDeposit', isDeposit: true },
-        { label: 'সর্বমোট জমা (BDT)', isTotalDeposit: true, rowClass: 'total-dep-row' },
-        { label: 'সর্বমোট প্রদেয় (ভাড়া বাদে)', isNetPayable: true, rowClass: 'payable-row' },
+        { label: 'সর্বমোট বকেয়া (ভাড়া বাদে)', isNetPayable: true, rowClass: 'payable-row' },
         { label: 'সিট ভাড়া (BDT)', key: 'rent' },
-        { label: '🏠 মোট প্রদেয় (ভাড়াসহ)', isNetPayableWithRent: true, rowClass: 'net-rent-payable-row' }
+        { label: 'সর্বমোট জমা (BDT)', isTotalDeposit: true, rowClass: 'total-dep-row' },
+        { label: '🏠 মোট বকেয়া (ভাড়াসহ)', isNetPayableWithRent: true, rowClass: 'net-rent-payable-row' }
     ];
 
     rowConfig.forEach(r => {
@@ -213,22 +213,25 @@ function renderTransposedTable(mealRate, elec, gas, water, wifi, khala, waste) {
 
             let mealExpense = Number((mealsNum * mealRate).toFixed(2));
             
-            // Total expense except rent includes meals, utility bills, prev adjustment, and fridge/other adjustment
-            let totalExpenseExceptRent = mealExpense + elec + gas + water + wifi + khala + waste + prevNum + fridgeNum;
+            // 1. Total expense except rent includes utilities, meal expense, prev adjustment, and fridge/other adjustment
+            let totalExpenseExceptRent = elec + gas + water + wifi + khala + waste + mealExpense + prevNum + fridgeNum;
             
-            // Member total deposit from Transaction log
+            // 2. Net payable (due) without rent = total expense except rent - bazar deposit
+            let netPayableWithoutRent = totalExpenseExceptRent - bazarNum;
+
+            // 3. Member total deposit from Transaction log
             let memberTotalDeposit = state.transactions
                 .filter(t => t.member === m.name)
                 .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
-            // Net payable without rent = total expense except rent - total deposit
-            let netPayableWithoutRent = totalExpenseExceptRent - memberTotalDeposit;
+            // 4. Net payable (due) with rent = (netPayableWithoutRent + rentNum) - memberTotalDeposit
+            let totalNetPayableWithRent = (netPayableWithoutRent + rentNum) - memberTotalDeposit;
 
             if(r.isTotalExp) html += `<td class="text-right font-bold">BDT ${totalExpenseExceptRent.toFixed(2)}</td>`;
-            else if(r.isTotalDeposit) html += `<td class="text-right font-bold text-green">BDT ${memberTotalDeposit.toFixed(2)}</td>`;
             else if(r.isDeposit) html += `<td class="text-right font-bold text-green">BDT ${bazarNum.toFixed(2)}</td>`;
             else if(r.isNetPayable) html += `<td class="text-right font-bold">${formatValueWithColor(netPayableWithoutRent)}</td>`;
-            else if(r.isNetPayableWithRent) html += `<td class="text-right font-bold">${formatValueWithColor(netPayableWithoutRent + rentNum)}</td>`;
+            else if(r.isTotalDeposit) html += `<td class="text-right font-bold text-green">BDT ${memberTotalDeposit.toFixed(2)}</td>`;
+            else if(r.isNetPayableWithRent) html += `<td class="text-right font-bold">${formatValueWithColor(totalNetPayableWithRent)}</td>`;
             else if(r.isRawFormatted) html += `<td class="text-right">${m[r.key]}</td>`;
             else if(r.calc) html += `<td class="text-right">${r.calc(m)}</td>`;
             else html += `<td class="text-right ${r.class || ''}">${m[r.key]}</td>`;
