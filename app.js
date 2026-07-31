@@ -414,20 +414,20 @@ function renderDrawerInputs() {
             <div class="input-group"><label>কারেন্ট বিল (BDT)</label><input type="number" id="inp_elec" class="drawer-input" value="${state.fixedCosts.electricity}"></div>
             <div class="input-group"><label>গ্যাস বিল (BDT)</label><input type="number" id="inp_gas" class="drawer-input" value="${state.fixedCosts.gas}"></div>
             
-            <div class="input-group water-bill-group" style="grid-column: 1 / -1; background: rgba(59, 130, 246, 0.05); padding: 10px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.15);">
-                <label style="font-weight: 700; color: #1e40af; margin-bottom: 6px; display: block;">💧 পানির বিল হিসাব:</label>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                    <div>
-                        <label style="font-size: 11px; color: #475569; display: block; margin-bottom: 2px;">বোতলের সংখ্যা</label>
-                        <input type="number" id="inp_water_count" class="drawer-input" value="${wbCount}" oninput="updateWaterBillCalc()">
+            <div class="water-bill-calc-box">
+                <div class="water-calc-header">💧 পানির বিল হিসাব:</div>
+                <div class="water-calc-grid">
+                    <div class="water-calc-item">
+                        <label class="water-calc-label" title="বোতলের সংখ্যা">বোতলের সংখ্যা</label>
+                        <input type="number" id="inp_water_count" class="drawer-input water-calc-input" value="${wbCount}" oninput="updateWaterBillCalc()">
                     </div>
-                    <div>
-                        <label style="font-size: 11px; color: #475569; display: block; margin-bottom: 2px;">প্রতি বোতল (BDT)</label>
-                        <input type="number" id="inp_water_price" class="drawer-input" value="${wbPrice}" oninput="updateWaterBillCalc()">
+                    <div class="water-calc-item">
+                        <label class="water-calc-label" title="প্রতি বোতল (BDT)">প্রতি বোতল (BDT)</label>
+                        <input type="number" id="inp_water_price" class="drawer-input water-calc-input" value="${wbPrice}" oninput="updateWaterBillCalc()">
                     </div>
-                    <div>
-                        <label style="font-size: 11px; color: #1e40af; font-weight: 600; display: block; margin-bottom: 2px;">মোট পানির বিল</label>
-                        <input type="number" id="inp_water" class="drawer-input" value="${wbTotal}" style="font-weight: bold; color: #1e40af;">
+                    <div class="water-calc-item">
+                        <label class="water-calc-label highlight" title="সর্বমোট পানির বিল">সর্বমোট পানির বিল</label>
+                        <input type="number" id="inp_water" class="drawer-input water-calc-input" value="${wbTotal}" style="font-weight: bold; color: #1e40af; background: #ffffff;">
                     </div>
                 </div>
             </div>

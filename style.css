@@ -249,6 +249,67 @@ th.highlight-column {
 .input-group label { font-size: 12px; font-weight: 600; color: #475569; }
 .drawer-input { background: #eef2f6; border: none; padding: 8px 10px; border-radius: 8px; font-weight: 600; outline: none; box-shadow: inset 2px 2px 4px #c5d0dd, inset -2px -2px 4px #ffffff; font-size: 13px; }
 
+/* Water Bill Calculation Responsive Grid */
+.water-bill-calc-box {
+    grid-column: 1 / -1;
+    background: rgba(59, 130, 246, 0.06);
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.water-calc-header {
+    font-weight: 700;
+    color: #1e40af;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.water-calc-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.water-calc-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    width: 100%;
+}
+
+.water-calc-label {
+    font-size: 11.5px;
+    color: #475569;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+.water-calc-label.highlight {
+    color: #1e40af;
+    font-weight: 700;
+}
+
+.water-calc-input {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    padding: 8px 6px !important;
+    font-size: 12.5px !important;
+    text-align: center;
+}
+
 .member-card-edit { padding: 12px; margin-bottom: 15px; border-radius: 12px; }
 .member-edit-title { font-weight: 700; color: #1e40af; margin-bottom: 8px; font-size: 14px; }
 .member-inputs-flex { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
