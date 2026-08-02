@@ -3,7 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ISOTOPE Ultra-Modern Mess Dashboard</title>
+    <title>ISOTOPE Beta</title>
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" sizes="192x192">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- PWA Theme & iOS Support -->
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Isotope Mess">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+
+    <!-- SEO Meta -->
+    <meta name="description" content="আইসোটোপ মেস ম্যানেজমেন্ট ড্যাশবোর্ড - অনলাইন ও অফলাইনে মেস হিসাব ব্যবস্থাপনা">
+
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -91,10 +107,7 @@
                 <svg class="svg-icon" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                 সদস্যভিত্তিক বিস্তারিত হিসাব সামারি
             </span>
-            <button id="adminBadge" class="admin-badge-btn" style="display:none;" onclick="toggleAdminDrawer(true)">
-                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
-                এডমিন প্যানেল খুলুন
-            </button>
+        
         </div>
         <div style="margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
             <div style="font-size: 13px; color: #475569; font-weight: 600;">সদস্য কলাম ফোকাস / হাইলাইট:</div>
@@ -405,5 +418,23 @@
 </script>
 
 <script src="app.js"></script>
+
+<!-- PWA Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('[PWA] Service Worker registered:', registration.scope);
+          // Check for updates every time page loads
+          registration.update();
+        })
+        .catch((err) => {
+          console.warn('[PWA] Service Worker registration failed:', err);
+        });
+    });
+  }
+</script>
+
 </body>
 </html>

@@ -1,0 +1,33 @@
+{
+  "name": "Isotope Mess Manager",
+  "short_name": "Isotope Mess",
+  "description": "আইসোটোপ মেস ম্যানেজমেন্ট ড্যাশবোর্ড - অনলাইন ও অফলাইনে মেস হিসাব ব্যবস্থাপনা",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef2f6",
+  "theme_color": "#2563eb",
+  "lang": "bn",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["finance", "productivity", "utilities"],
+  "screenshots": []
+}

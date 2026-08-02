@@ -189,7 +189,7 @@ function renderTransposedTable(mealRate, elec, gas, water, wifi, khala, waste) {
         { label: 'ময়লার বিল (BDT)', calc: () => waste.toFixed(2) },
         { label: 'মিল সংখ্যা', key: 'meals' },
         { label: 'মিল খরচ (BDT)', calc: (m) => (Number(m.meals || 0) * mealRate).toFixed(2) },
-        { label: 'গত মাসের সমন্বয় (BDT)', key: 'prevAdj', isRawFormatted: true },
+        { label: 'গত মাসের বকেয়া (BDT)', key: 'prevAdj', isRawFormatted: true },
         { label: `অন্যান্য (${state.customAdjLabel}) (BDT)`, key: 'fridgeAdj', isRawFormatted: true },
         { label: 'সর্বমোট খরচ (ভাড়া বাদে)', isTotalExp: true, rowClass: 'total-exp-row' },
         { label: 'বাজার জমা (BDT)', key: 'bazarDeposit', isDeposit: true },
@@ -461,7 +461,7 @@ function renderDrawerInputs() {
                     <div class="member-inputs-flex">
                         <div class="input-group"><label>মিল সংখ্যা</label><input type="number" id="mem_meals_${idx}" class="drawer-input" value="${m.meals}"></div>
                         <div class="input-group"><label>বাজার জমা</label><input type="number" id="mem_bazar_${idx}" class="drawer-input" value="${m.bazarDeposit}"></div>
-                        <div class="input-group"><label>গত মাসের সমন্বয়</label><input type="number" id="mem_prev_${idx}" class="drawer-input" value="${m.prevAdj}"></div>
+                        <div class="input-group"><label>গত মাসের বকেয়া</label><input type="number" id="mem_prev_${idx}" class="drawer-input" value="${m.prevAdj}"></div>
                         <div class="input-group"><label>অন্যান্য (${state.customAdjLabel})</label><input type="number" id="mem_fridge_${idx}" class="drawer-input" value="${m.fridgeAdj}"></div>
                     </div>
                     <button class="btn clay-btn clay-btn-primary full-width-btn" onclick="saveMemberData(${idx})">
@@ -758,16 +758,13 @@ function submitPasswordChange() {
 }
 
 function updateAdminUIState() {
-    const adminBadge = document.getElementById('adminBadge');
     const adminBtnText = document.getElementById('adminBtnText');
     const txnAdminNavBtnText = document.getElementById('txnAdminNavBtnText');
 
     if(state.isAdmin) {
-        if(adminBadge) adminBadge.style.display = 'inline-flex';
         if(adminBtnText) adminBtnText.innerText = "এডমিন প্যানেল";
         if(txnAdminNavBtnText) txnAdminNavBtnText.innerText = "এডমিন প্যানেল";
     } else {
-        if(adminBadge) adminBadge.style.display = 'none';
         if(adminBtnText) adminBtnText.innerText = "এডমিন কন্ট্রোল";
         if(txnAdminNavBtnText) txnAdminNavBtnText.innerText = "এডমিন কন্ট্রোল";
     }
@@ -838,4 +835,25 @@ window.onload = function() {
     window.addEventListener('firebase-ready', () => {
         loadFirebaseData();
     });
+
+    // =====================
+    // Online / Offline Detection for PWA
+    // =====================
+    window.addEventListener('online', () => {
+        showToast("📶 ইন্টারনেট সংযোগ পাওয়া গেছে! তথ্য আপডেট করা হচ্ছে...", "success");
+        // Auto-reload latest data from Firebase when connection is restored
+        loadFirebaseData();
+    });
+
+    window.addEventListener('offline', () => {
+        showToast("📵 আপনি অফলাইনে আছেন। সংরক্ষিত ডাটা দেখানো হচ্ছে।", "error");
+    });
+
+    // Show initial offline status if user opens app without internet
+    if (!navigator.onLine) {
+        setTimeout(() => {
+            showToast("📵 অফলাইন মোড: সংরক্ষিত ডাটা দেখানো হচ্ছে।", "error");
+        }, 1500);
+    }
 };
+

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1d4ed8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+    </linearGradient>
+    <clipPath id="roundedClip">
+      <rect width="512" height="512" rx="110" ry="110"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="110" ry="110" fill="url(#bgGrad)"/>
+
+  <!-- Dashboard grid icon - 4 rounded rectangles (white, solid fill) -->
+  <!-- Top-left: tall rectangle -->
+  <rect x="80" y="80" width="155" height="215" rx="28" ry="28" fill="white" opacity="0.95"/>
+
+  <!-- Top-right: short wide rectangle -->
+  <rect x="275" y="80" width="157" height="95" rx="28" ry="28" fill="white" opacity="0.95"/>
+
+  <!-- Bottom-left: short wide rectangle -->
+  <rect x="80" y="337" width="155" height="95" rx="28" ry="28" fill="white" opacity="0.95"/>
+
+  <!-- Bottom-right: tall rectangle -->
+  <rect x="275" y="220" width="157" height="212" rx="28" ry="28" fill="white" opacity="0.95"/>
+</svg>

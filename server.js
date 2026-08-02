@@ -8,6 +8,19 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Serve sw.js with correct Service-Worker-Allowed header
+app.get('/sw.js', (req, res) => {
+  res.set('Service-Worker-Allowed', '/');
+  res.set('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, 'sw.js'));
+});
+
+// Serve manifest.json with correct content-type
+app.get('/manifest.json', (req, res) => {
+  res.set('Content-Type', 'application/manifest+json');
+  res.sendFile(path.join(__dirname, 'manifest.json'));
+});
+
 app.use(express.static(__dirname));
 
 app.get('/logs', (req, res) => {
