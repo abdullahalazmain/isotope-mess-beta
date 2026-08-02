@@ -12,16 +12,26 @@
   <!-- Background -->
   <rect width="512" height="512" rx="110" ry="110" fill="url(#bgGrad)"/>
 
-  <!-- Dashboard grid icon - 4 rounded rectangles (white, solid fill) -->
-  <!-- Top-left: tall rectangle -->
-  <rect x="80" y="80" width="155" height="215" rx="28" ry="28" fill="white" opacity="0.95"/>
+  <!--
+    Safe zone for maskable icons = 80% of total size (centered)
+    512 * 0.10 = 51.2 => safe area starts at ~51px each side
+    But for visual breathing room, we use ~18% padding = 92px each side
+    Usable area: 512 - 2*92 = 328px  (x: 92 to 420, y: 92 to 420)
+    Gap between tiles = 20px
+    Left column width  = 148px,  right column width = 160px  => total 148+20+160 = 328 ✓
+    Top row height     = 120px,  bottom row height  = 188px  => total 120+20+188 = 328 ✓
+    corner radius = 18
+  -->
 
-  <!-- Top-right: short wide rectangle -->
-  <rect x="275" y="80" width="157" height="95" rx="28" ry="28" fill="white" opacity="0.95"/>
+  <!-- Top-left: wide short tile -->
+  <rect x="92" y="92" width="148" height="120" rx="18" ry="18" fill="white" opacity="0.95"/>
 
-  <!-- Bottom-left: short wide rectangle -->
-  <rect x="80" y="337" width="155" height="95" rx="28" ry="28" fill="white" opacity="0.95"/>
+  <!-- Top-right: tall tile -->
+  <rect x="260" y="92" width="160" height="188" rx="18" ry="18" fill="white" opacity="0.95"/>
 
-  <!-- Bottom-right: tall rectangle -->
-  <rect x="275" y="220" width="157" height="212" rx="28" ry="28" fill="white" opacity="0.95"/>
+  <!-- Bottom-left: tall tile -->
+  <rect x="92" y="232" width="148" height="188" rx="18" ry="18" fill="white" opacity="0.95"/>
+
+  <!-- Bottom-right: wide short tile -->
+  <rect x="260" y="300" width="160" height="120" rx="18" ry="18" fill="white" opacity="0.95"/>
 </svg>
