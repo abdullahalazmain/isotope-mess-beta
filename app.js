@@ -35,6 +35,16 @@ let state = {
     ]
 };
 
+// ============================================================
+// DEV/PRODUCTION DATA SEPARATION
+// ------------------------------------------------------------
+// Production site (isotope-mess-beta.vercel.app) uses the real,
+// user-facing collections. ALL other environments (preview URLs,
+// localhost, etc.) use dev_-prefixed collections so that any
+// changes made while developing never touch real user data.
+// ============================================================
+const DB_PREFIX = (window.location.hostname === 'isotope-mess-beta.vercel.app') ? '' : 'dev_';
+
 let confirmCallback = null;
 
 // Custom Toast Notification Function
@@ -344,7 +354,7 @@ function deleteTransaction(txnId) {
             if (window.firebaseDb) {
                 try {
                     const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js");
-                    await deleteDoc(doc(window.firebaseDb, "transactions", String(txnId)));
+                    await deleteDoc(doc(window.firebaseDb, DB_PREFIX + "transactions", String(txnId)));
                 } catch(e) {
                     console.error("Firebase delete transaction error:", e);
                 }
@@ -556,7 +566,7 @@ async function deleteNotice(idx) {
     if (noticeId && window.firebaseDb) {
         try {
             const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js");
-            await deleteDoc(doc(window.firebaseDb, "notices", String(noticeId)));
+            await deleteDoc(doc(window.firebaseDb, DB_PREFIX + "notices", String(noticeId)));
         } catch(e) {
             console.error("Firebase delete notice error:", e);
         }
@@ -574,7 +584,7 @@ async function saveData() {
             const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js");
             
             // 1. Save settings
-            await setDoc(doc(window.firebaseDb, "settings", "config"), {
+            await setDoc(doc(window.firebaseDb, DB_PREFIX + "settings", "config"), {
                 fixedCosts: state.fixedCosts,
                 customAdjLabel: state.customAdjLabel,
                 adminPassword: state.adminPassword || "isotope@12azmain"
@@ -583,17 +593,17 @@ async function saveData() {
             // 2. Save members
             for (let member of state.members) {
                 const docId = member.name.replace(/\s+/g, '_');
-                await setDoc(doc(window.firebaseDb, "members", docId), member);
+                await setDoc(doc(window.firebaseDb, DB_PREFIX + "members", docId), member);
             }
 
             // 3. Save notices
             for (let notice of state.notices) {
-                await setDoc(doc(window.firebaseDb, "notices", String(notice.id)), notice);
+                await setDoc(doc(window.firebaseDb, DB_PREFIX + "notices", String(notice.id)), notice);
             }
 
             // 4. Save transactions
             for (let txn of state.transactions) {
-                await setDoc(doc(window.firebaseDb, "transactions", String(txn.id)), txn);
+                await setDoc(doc(window.firebaseDb, DB_PREFIX + "transactions", String(txn.id)), txn);
             }
         } catch(e) {
             if(e.code === 'permission-denied') {
@@ -788,10 +798,10 @@ async function loadFirebaseData() {
         try {
             const { doc, getDoc, collection, getDocs } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js");
             
-            const configSnap = await getDoc(doc(window.firebaseDb, "settings", "config"));
-            const membersSnap = await getDocs(collection(window.firebaseDb, "members"));
-            const noticesSnap = await getDocs(collection(window.firebaseDb, "notices"));
-            const transactionsSnap = await getDocs(collection(window.firebaseDb, "transactions"));
+            const configSnap = await getDoc(doc(window.firebaseDb, DB_PREFIX + "settings", "config"));
+            const membersSnap = await getDocs(collection(window.firebaseDb, DB_PREFIX + "members"));
+            const noticesSnap = await getDocs(collection(window.firebaseDb, DB_PREFIX + "notices"));
+            const transactionsSnap = await getDocs(collection(window.firebaseDb, DB_PREFIX + "transactions"));
 
             if(configSnap.exists() || !membersSnap.empty) {
                 if(configSnap.exists()) {

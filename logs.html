@@ -54,6 +54,16 @@
       measurementId: "G-TS9R91ZKK1"
     };
 
+    // ============================================================
+    // DEV/PRODUCTION DATA SEPARATION
+    // ------------------------------------------------------------
+    // Production site (isotope-mess-beta.vercel.app) uses the real,
+    // user-facing collections. ALL other environments (preview URLs,
+    // localhost, etc.) use dev_-prefixed collections so that any
+    // changes made while developing never touch real user data.
+    // ============================================================
+    const DB_PREFIX = (window.location.hostname === 'isotope-mess-beta.vercel.app') ? '' : 'dev_';
+
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
     const db = getFirestore(app);
@@ -72,7 +82,7 @@
         }
 
         try {
-            const querySnapshot = await getDocs(collection(db, "transactions"));
+            const querySnapshot = await getDocs(collection(db, DB_PREFIX + "transactions"));
             if (!querySnapshot.empty) {
                 transactions = [];
                 querySnapshot.forEach((doc) => {
