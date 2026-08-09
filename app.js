@@ -35,16 +35,6 @@ let state = {
     ]
 };
 
-// ============================================================
-// DEV/PRODUCTION DATA SEPARATION
-// ------------------------------------------------------------
-// Production site (isotope-mess-beta.vercel.app) uses the real,
-// user-facing collections. ALL other environments (preview URLs,
-// localhost, etc.) use dev_-prefixed collections so that any
-// changes made while developing never touch real user data.
-// ============================================================
-const DB_PREFIX = (window.location.hostname === 'isotope-mess-beta.vercel.app') ? '' : 'dev_';
-
 let confirmCallback = null;
 
 // Custom Toast Notification Function
@@ -354,7 +344,7 @@ function deleteTransaction(txnId) {
             if (window.firebaseDb) {
                 try {
                     const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js");
-                    await deleteDoc(doc(window.firebaseDb, DB_PREFIX + "transactions", String(txnId)));
+                    await deleteDoc(doc(window.firebaseDb, "transactions", String(txnId)));
                 } catch(e) {
                     console.error("Firebase delete transaction error:", e);
                 }
@@ -566,7 +556,7 @@ async function deleteNotice(idx) {
     if (noticeId && window.firebaseDb) {
         try {
             const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js");
-            await deleteDoc(doc(window.firebaseDb, DB_PREFIX + "notices", String(noticeId)));
+            await deleteDoc(doc(window.firebaseDb, "notices", String(noticeId)));
         } catch(e) {
             console.error("Firebase delete notice error:", e);
         }
@@ -584,7 +574,7 @@ async function saveData() {
             const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js");
             
             // 1. Save settings
-            await setDoc(doc(window.firebaseDb, DB_PREFIX + "settings", "config"), {
+            await setDoc(doc(window.firebaseDb, "settings", "config"), {
                 fixedCosts: state.fixedCosts,
                 customAdjLabel: state.customAdjLabel,
                 adminPassword: state.adminPassword || "isotope@12azmain"
@@ -593,17 +583,17 @@ async function saveData() {
             // 2. Save members
             for (let member of state.members) {
                 const docId = member.name.replace(/\s+/g, '_');
-                await setDoc(doc(window.firebaseDb, DB_PREFIX + "members", docId), member);
+                await setDoc(doc(window.firebaseDb, "members", docId), member);
             }
 
             // 3. Save notices
             for (let notice of state.notices) {
-                await setDoc(doc(window.firebaseDb, DB_PREFIX + "notices", String(notice.id)), notice);
+                await setDoc(doc(window.firebaseDb, "notices", String(notice.id)), notice);
             }
 
             // 4. Save transactions
             for (let txn of state.transactions) {
-                await setDoc(doc(window.firebaseDb, DB_PREFIX + "transactions", String(txn.id)), txn);
+                await setDoc(doc(window.firebaseDb, "transactions", String(txn.id)), txn);
             }
         } catch(e) {
             if(e.code === 'permission-denied') {
@@ -798,10 +788,10 @@ async function loadFirebaseData() {
         try {
             const { doc, getDoc, collection, getDocs } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js");
             
-            const configSnap = await getDoc(doc(window.firebaseDb, DB_PREFIX + "settings", "config"));
-            const membersSnap = await getDocs(collection(window.firebaseDb, DB_PREFIX + "members"));
-            const noticesSnap = await getDocs(collection(window.firebaseDb, DB_PREFIX + "notices"));
-            const transactionsSnap = await getDocs(collection(window.firebaseDb, DB_PREFIX + "transactions"));
+            const configSnap = await getDoc(doc(window.firebaseDb, "settings", "config"));
+            const membersSnap = await getDocs(collection(window.firebaseDb, "members"));
+            const noticesSnap = await getDocs(collection(window.firebaseDb, "notices"));
+            const transactionsSnap = await getDocs(collection(window.firebaseDb, "transactions"));
 
             if(configSnap.exists() || !membersSnap.empty) {
                 if(configSnap.exists()) {
@@ -836,6 +826,34 @@ async function loadFirebaseData() {
             } else {
                 console.error("Firebase load/init error:", e);
             }
+        }
+    } else if(!local && window.IS_DEV_MODE) {
+        // ============================================================
+        // LOCAL DEVELOPMENT MODE (mock database — NO Firebase calls)
+        // ------------------------------------------------------------
+        // When running locally (localhost), we intentionally do NOT
+        // initialize Firebase. Instead we seed the app from the local
+        // mock JSON file so that no request ever reaches the live
+        // Firestore database. All saves go to localStorage only.
+        // ============================================================
+        try {
+            const mock = await window.loadMockDatabase();
+            const cfg = (mock.settings && mock.settings.config) || {};
+
+            if (cfg.fixedCosts) state.fixedCosts = cfg.fixedCosts;
+            if (cfg.customAdjLabel) state.customAdjLabel = cfg.customAdjLabel;
+            if (cfg.adminPassword) state.adminPassword = cfg.adminPassword;
+
+            if (mock.members) state.members = Object.values(mock.members);
+            if (mock.notices) state.notices = mock.notices;
+            if (mock.transactions) state.transactions = mock.transactions;
+
+            localStorage.setItem('isotope_mess_data', JSON.stringify(state));
+            updateAdminUIState();
+            calculateAll();
+            console.info("[DEV] Using local mock database — no Firebase requests are made.");
+        } catch(e) {
+            console.warn("Mock database load error:", e);
         }
     }
 }

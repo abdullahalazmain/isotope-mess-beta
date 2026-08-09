@@ -398,23 +398,46 @@
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-analytics.js";
   import { getFirestore } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAckBpcMbXPoWnOQmvtXY10ofknwRJTz2A",
-    authDomain: "isotope-beta.firebaseapp.com",
-    projectId: "isotope-beta",
-    storageBucket: "isotope-beta.firebasestorage.app",
-    messagingSenderId: "419427665548",
-    appId: "1:419427665548:web:624b67b1db48698c121da9",
-    measurementId: "G-TS9R91ZKK1"
+  // ============================================================
+  // LOCAL DEV / PRODUCTION SWITCH
+  // ------------------------------------------------------------
+  // In local development, Firebase is intentionally NOT initialized:
+  // the app loads from the local mock database (src/data/mockDatabase.json)
+  // and saves only to localStorage. NO request ever reaches live Firestore.
+  // In production (Vercel), Firebase connects as normal and reads/writes
+  // the real user-facing Firestore collections.
+  // ============================================================
+  const IS_DEV_MODE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  window.IS_DEV_MODE = IS_DEV_MODE;
+
+  // Loader for the local mock database used ONLY in development.
+  // Returns a plain-JS object shaped exactly like Firestore exports:
+  //   { settings: { config: {...} }, members: {...}, notices: [...], transactions: [...] }
+  window.loadMockDatabase = async function() {
+    const res = await fetch('src/data/mockDatabase.json');
+    if (!res.ok) throw new Error('Mock database file not found at src/data/mockDatabase.json');
+    return res.json();
   };
 
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-  const db = getFirestore(app);
+  if (!IS_DEV_MODE) {
+    const firebaseConfig = {
+      apiKey: "AIzaSyAckBpcMbXPoWnOQmvtXY10ofknwRJTz2A",
+      authDomain: "isotope-beta.firebaseapp.com",
+      projectId: "isotope-beta",
+      storageBucket: "isotope-beta.firebasestorage.app",
+      messagingSenderId: "419427665548",
+      appId: "1:419427665548:web:624b67b1db48698c121da9",
+      measurementId: "G-TS9R91ZKK1"
+    };
 
-  window.firebaseApp = app;
-  window.firebaseDb = db;
-  window.dispatchEvent(new CustomEvent('firebase-ready'));
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+
+    window.firebaseApp = app;
+    window.firebaseDb = db;
+    window.dispatchEvent(new CustomEvent('firebase-ready'));
+  }
 </script>
 
 <script src="app.js"></script>

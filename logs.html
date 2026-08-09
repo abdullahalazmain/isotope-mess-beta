@@ -55,21 +55,24 @@
     };
 
     // ============================================================
-    // DEV/PRODUCTION DATA SEPARATION
+    // LOCAL DEV / PRODUCTION SWITCH
     // ------------------------------------------------------------
-    // Production site (isotope-mess-beta.vercel.app) uses the real,
-    // user-facing collections. ALL other environments (preview URLs,
-    // localhost, etc.) use dev_-prefixed collections so that any
-    // changes made while developing never touch real user data.
+    // In local development, Firebase is intentionally NOT initialized:
+    // the app loads from the local mock database (src/data/mockDatabase.json)
+    // and saves only to localStorage. NO request ever reaches live Firestore.
+    // In production (Vercel), Firebase connects as normal.
     // ============================================================
-    const DB_PREFIX = (window.location.hostname === 'isotope-mess-beta.vercel.app') ? '' : 'dev_';
+    const IS_DEV_MODE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    window.IS_DEV_MODE = IS_DEV_MODE;
 
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const db = getFirestore(app);
-
-    window.firebaseApp = app;
-    window.firebaseDb = db;
+    let db = null;
+    if (!IS_DEV_MODE) {
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+      db = getFirestore(app);
+      window.firebaseApp = app;
+      window.firebaseDb = db;
+    }
 
     async function loadLogs() {
         let transactions = [];
@@ -82,12 +85,14 @@
         }
 
         try {
-            const querySnapshot = await getDocs(collection(db, DB_PREFIX + "transactions"));
-            if (!querySnapshot.empty) {
-                transactions = [];
-                querySnapshot.forEach((doc) => {
-                    transactions.push(doc.data());
-                });
+            if (db) {
+                const querySnapshot = await getDocs(collection(db, "transactions"));
+                if (!querySnapshot.empty) {
+                    transactions = [];
+                    querySnapshot.forEach((doc) => {
+                        transactions.push(doc.data());
+                    });
+                }
             }
         } catch(e) {
             if(e.code === 'permission-denied') {
