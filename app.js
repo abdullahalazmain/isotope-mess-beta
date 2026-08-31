@@ -274,7 +274,7 @@ async function loadMonthDataFromFirestore(mKey) {
     try {
         const { doc, getDoc, collection, getDocs } = await getFirestoreModule();
 
-        // 1. Fixed costs: try month-scoped first, then root config
+        // 1. Fixed costs: try month-scoped first
         let fixedLoaded = false;
         try {
             const fixedSnap = await getDoc(doc(window.firebaseDb, "months", mKey, "data", "fixedCosts"));
@@ -286,19 +286,28 @@ async function loadMonthDataFromFirestore(mKey) {
             console.warn(`Firebase fixedCosts month load warning (${mKey}):`, err);
         }
 
-        if (!fixedLoaded) {
+        // ONLY fallback to root settings/config if mKey is August 2026
+        if (!fixedLoaded && mKey === "2026-08") {
             try {
                 const configSnap = await getDoc(doc(window.firebaseDb, "settings", "config"));
                 if (configSnap && configSnap.exists()) {
                     const cfg = configSnap.data();
                     if (cfg.fixedCosts) state.fixedCosts = { ...state.fixedCosts, ...cfg.fixedCosts };
+                    fixedLoaded = true;
                 }
             } catch (err) {
                 console.warn(`Firebase root fixedCosts load warning:`, err);
             }
+        } else if (!fixedLoaded) {
+            // For other months when not created yet, default to clean or current template
+            if (state.months && state.months[mKey] && state.months[mKey].fixedCosts) {
+                state.fixedCosts = { ...state.months[mKey].fixedCosts };
+            } else {
+                state.fixedCosts = { ...createEmptyMonthData().fixedCosts };
+            }
         }
 
-        // 2. Members: try month-scoped first, then root collection fallback (existing real data)
+        // 2. Members: try month-scoped first
         let membersLoaded = false;
         try {
             const memSnap = await getDocs(collection(window.firebaseDb, "months", mKey, "members"));
@@ -315,8 +324,8 @@ async function loadMonthDataFromFirestore(mKey) {
             console.warn(`Firebase members month load warning (${mKey}):`, err);
         }
 
-        // Fallback to root members collection if month collection is empty
-        if (!membersLoaded) {
+        // ONLY fallback to root members collection for August 2026 (preserves real existing August data)
+        if (!membersLoaded && mKey === "2026-08") {
             try {
                 const rootMemSnap = await getDocs(collection(window.firebaseDb, "members"));
                 if (rootMemSnap && !rootMemSnap.empty) {
@@ -325,14 +334,26 @@ async function loadMonthDataFromFirestore(mKey) {
                     if (membersList.length > 0) {
                         state.members = membersList;
                         ensureMemberOrder();
+                        membersLoaded = true;
                     }
                 }
             } catch (err) {
                 console.warn(`Firebase root members load warning:`, err);
             }
+        } else if (!membersLoaded) {
+            // For other non-August months that do NOT exist in Firebase yet:
+            // Use clean month member template with auto previous month balance calculation
+            if (state.months && state.months[mKey] && state.months[mKey].members && state.months[mKey].members.length > 0) {
+                state.members = state.months[mKey].members.map(m => ({ ...m }));
+            } else {
+                state.members = createEmptyMonthData().members;
+            }
+            state.members.forEach(m => {
+                m.prevAdj = calculatePrevMonthBalanceForMember(mKey, m.name);
+            });
         }
 
-        // 3. Notices: try month-scoped first, then root collection fallback
+        // 3. Notices: try month-scoped first
         let noticesLoaded = false;
         try {
             const notSnap = await getDocs(collection(window.firebaseDb, "months", mKey, "notices"));
@@ -348,7 +369,8 @@ async function loadMonthDataFromFirestore(mKey) {
             console.warn(`Firebase notices month load warning (${mKey}):`, err);
         }
 
-        if (!noticesLoaded) {
+        // ONLY fallback to root notices for August 2026
+        if (!noticesLoaded && mKey === "2026-08") {
             try {
                 const rootNotSnap = await getDocs(collection(window.firebaseDb, "notices"));
                 if (rootNotSnap && !rootNotSnap.empty) {
@@ -361,9 +383,13 @@ async function loadMonthDataFromFirestore(mKey) {
             } catch (err) {
                 console.warn(`Firebase root notices load warning:`, err);
             }
+        } else if (!noticesLoaded) {
+            state.notices = (state.months && state.months[mKey] && state.months[mKey].notices)
+                ? state.months[mKey].notices.map(n => ({ ...n }))
+                : [];
         }
 
-        // 4. Transactions: try month-scoped first, then root collection fallback
+        // 4. Transactions: try month-scoped first
         let txnsLoaded = false;
         try {
             const txnSnap = await getDocs(collection(window.firebaseDb, "months", mKey, "transactions"));
@@ -380,7 +406,8 @@ async function loadMonthDataFromFirestore(mKey) {
             console.warn(`Firebase transactions month load warning (${mKey}):`, err);
         }
 
-        if (!txnsLoaded) {
+        // ONLY fallback to root transactions for August 2026
+        if (!txnsLoaded && mKey === "2026-08") {
             try {
                 const rootTxnSnap = await getDocs(collection(window.firebaseDb, "transactions"));
                 if (rootTxnSnap && !rootTxnSnap.empty) {
@@ -394,6 +421,10 @@ async function loadMonthDataFromFirestore(mKey) {
             } catch (err) {
                 console.warn(`Firebase root transactions load warning:`, err);
             }
+        } else if (!txnsLoaded) {
+            state.transactions = (state.months && state.months[mKey] && state.months[mKey].transactions)
+                ? state.months[mKey].transactions.map(t => ({ ...t }))
+                : [];
         }
 
         // Update local state.months dictionary
@@ -411,6 +442,24 @@ async function loadMonthDataFromFirestore(mKey) {
 
 window.loadFromFirestore = loadFromFirestore;
 window.saveData = saveData;
+
+// ---------- Hamburger Menu Handler ----------
+function toggleHamburgerMenu(forceState) {
+    const menu = $('hamburgerMenuDropdown');
+    if (!menu) return;
+    if (typeof forceState === 'boolean') {
+        menu.style.display = forceState ? 'block' : 'none';
+    } else {
+        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    }
+}
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.hamburger-wrapper')) {
+        const menu = $('hamburgerMenuDropdown');
+        if (menu) menu.style.display = 'none';
+    }
+});
 
 // ---------- Auto Previous Month Balance Calculation ----------
 function getPrevMonthKey(mKey) {
@@ -1368,6 +1417,10 @@ function updateAdminUIState() {
     const txnAdminNavBtnText = $('txnAdminNavBtnText');
     if (txnAdminNavBtnText) {
         txnAdminNavBtnText.innerText = state.isAdmin ? "এডমিন প্যানেল" : "এডমিন কন্ট্রোল";
+    }
+    const mobileAdminBtnText = $('mobileAdminBtnText');
+    if (mobileAdminBtnText) {
+        mobileAdminBtnText.innerText = state.isAdmin ? "🛡️ এডমিন প্যানেল" : "🛡️ এডমিন কন্ট্রোল";
     }
     renderTransactions();
 }
