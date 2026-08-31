@@ -642,17 +642,44 @@ th.highlight-column {
     background: #eff6ff;
 }
 
+/* Custom Adjustment (i) Button & Tooltip Badge */
+.adj-info-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 3px;
+    padding: 0;
+    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+.adj-info-btn:hover {
+    opacity: 1;
+}
+.adj-info-badge {
+    display: block;
+    margin-top: 4px;
+    padding: 3px 6px;
+    background: #f1f5f9;
+    color: #334155;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid #cbd5e1;
+    word-break: break-word;
+    max-width: 175px;
+    box-shadow: inset 1px 1px 2px #e2e8f0;
+}
+
 /* ======================================================== */
 /* TABLET & MOBILE RESPONSIVE STYLES                        */
 /* ======================================================== */
-@media (max-width: 1024px) {
-    .admin-page-grid {
-        grid-template-columns: 1fr;
-        gap: 16px;
-    }
-}
 
-@media (max-width: 768px) {
+/* 1060px Breakpoint: Hamburger Menu Active */
+@media (max-width: 1060px) {
     .desktop-nav-buttons {
         display: none !important;
     }
@@ -665,7 +692,7 @@ th.highlight-column {
         flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
-        padding: 12px 14px;
+        padding: 12px 16px;
         gap: 10px;
     }
     .brand-container {
@@ -691,6 +718,40 @@ th.highlight-column {
     }
 }
 
+/* 1024px Breakpoint: Admin Page Grid single column */
+@media (max-width: 1024px) {
+    .admin-page-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px;
+    }
+}
+
+/* Between 1024px and 491px: Deposit and Notice cards side-by-side */
+@media (max-width: 1024px) and (min-width: 491px) {
+    .admin-col-left {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 14px !important;
+    }
+    .admin-col-left .admin-page-card {
+        margin-top: 0 !important;
+        height: 100%;
+    }
+}
+
+/* Below 490px: Deposit and Notice cards stack vertically */
+@media (max-width: 490px) {
+    .admin-col-left {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+    }
+    .admin-col-left .admin-page-card {
+        margin-top: 0 !important;
+    }
+}
+
+/* Mobile Screens (640px and below) */
 @media (max-width: 640px) {
     html, body {
         padding: 8px 6px;
@@ -712,47 +773,15 @@ th.highlight-column {
         box-sizing: border-box !important;
     }
 
-    /* Admin Fixed Costs & Utility Section Mobile Fix */
-    .drawer-inputs-grid {
-        grid-template-columns: 1fr !important;
-        gap: 10px;
+    .admin-page-card {
         width: 100% !important;
         box-sizing: border-box !important;
     }
-    .input-group {
-        width: 100% !important;
-        min-width: 0 !important;
-        box-sizing: border-box !important;
-    }
-    .drawer-input {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        box-sizing: border-box !important;
-    }
+
     .water-bill-calc-box {
         padding: 10px 8px !important;
         width: 100% !important;
         max-width: 100% !important;
-        box-sizing: border-box !important;
-    }
-    .water-calc-grid {
-        grid-template-columns: 1fr !important;
-        gap: 8px;
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-    }
-    .water-calc-item {
-        width: 100% !important;
-        box-sizing: border-box !important;
-    }
-    .water-calc-input {
-        width: 100% !important;
-        box-sizing: border-box !important;
-    }
-    .admin-page-card {
-        width: 100% !important;
         box-sizing: border-box !important;
     }
 
@@ -796,8 +825,6 @@ th.highlight-column {
         padding: 8px 6px;
     }
 
-    .member-edit-grid { grid-template-columns: 1fr; }
-
     #txnPage .txn-page-header { flex-direction: column; align-items: stretch; gap: 12px; }
     #txnPage .txn-page-header .nav-buttons { flex-direction: column; width: 100%; gap: 8px; }
     #txnPage .txn-page-header .nav-buttons .btn { width: 100%; justify-content: center; }
@@ -818,6 +845,14 @@ th.highlight-column {
     .modal-content { width: 90vw; max-width: 440px; }
 }
 
+/* 300px and below: Utility inputs and member inputs stack to 1 column */
+@media (max-width: 300px) {
+    .drawer-inputs-grid,
+    .member-edit-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
 /* ======================================================== */
 /* COMPREHENSIVE MULTI-SECTION PRINT STYLESHEET             */
 /* Prints: Summary Table + Member Detail Table + Txn Table  */
@@ -828,7 +863,7 @@ th.highlight-column {
         color: #000000 !important;
         padding: 0 !important;
         margin: 0 !important;
-        font-size: 11pt;
+        font-size: 9pt !important;
     }
 
     nav.navbar,
@@ -849,30 +884,33 @@ th.highlight-column {
     .notice-board-card,
     .notice-container,
     #noticeContainer,
-    .title-with-icon svg {
+    .title-with-icon svg,
+    .adj-info-btn {
         display: none !important;
     }
 
-    #mainDashboard {
-        display: block !important;
-    }
-
+    #mainDashboard,
     #txnPage {
         display: block !important;
-        page-break-before: auto;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
     .clay-card {
         box-shadow: none !important;
         border: 1px solid #cbd5e1 !important;
         background: #ffffff !important;
-        padding: 12px !important;
-        margin-bottom: 18px !important;
+        padding: 10px !important;
+        margin-bottom: 14px !important;
         page-break-inside: avoid;
     }
 
     .table-responsive {
         overflow: visible !important;
+        width: 100% !important;
+        max-width: 100% !important;
     }
 
     table, th, td {
@@ -883,11 +921,42 @@ th.highlight-column {
         background: #f1f5f9 !important;
         color: #0f172a !important;
         border: 1px solid #94a3b8 !important;
+        font-size: 8.5pt !important;
+        padding: 4px 6px !important;
     }
 
     table td {
         border: 1px solid #cbd5e1 !important;
         color: #0f172a !important;
+        font-size: 8.5pt !important;
+        padding: 4px 6px !important;
+    }
+
+    .horizontal-table {
+        min-width: 0 !important;
+        width: 100% !important;
+        table-layout: auto !important;
+    }
+
+    .horizontal-table th, .horizontal-table td {
+        position: static !important;
+        box-shadow: none !important;
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        font-size: 8pt !important;
+        padding: 4px 5px !important;
+        white-space: nowrap !important;
+    }
+
+    .horizontal-table th:first-child, .horizontal-table td:first-child {
+        position: static !important;
+        box-shadow: none !important;
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        font-weight: 700 !important;
+        white-space: normal !important;
     }
 
     .excel-table th {

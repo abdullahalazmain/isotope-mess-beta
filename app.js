@@ -203,34 +203,32 @@ async function saveData() {
         const { doc, setDoc } = await getFirestoreModule();
         const mKey = state.activeMonth;
 
-        // 1. Global settings (preserves config with fixedCosts for root/legacy support)
+        // 1. Global settings
         await setDoc(doc(window.firebaseDb, "settings", "config"), {
-            fixedCosts: state.fixedCosts,
-            customAdjLabel: state.customAdjLabel,
             adminPassword: state.adminPassword || DEFAULT_ADMIN_PASSWORD,
             activeMonth: state.activeMonth
         });
 
-        // 2. Month-scoped fixed costs
-        await setDoc(doc(window.firebaseDb, "months", mKey, "data", "fixedCosts"), state.fixedCosts);
+        // 2. Month-scoped fixed costs & month custom adjustment label
+        await setDoc(doc(window.firebaseDb, "months", mKey, "data", "fixedCosts"), {
+            ...state.fixedCosts,
+            customAdjLabel: state.customAdjLabel || "ফ্রিজ ও অন্যান্য"
+        });
 
-        // 3. Members: Save to both months collection AND root collection (for live backward compatibility)
+        // 3. Month-scoped members
         for (let member of state.members) {
             const docId = member.name.replace(/\s+/g, '_');
             await setDoc(doc(window.firebaseDb, "months", mKey, "members", docId), member);
-            await setDoc(doc(window.firebaseDb, "members", docId), member);
         }
 
-        // 4. Notices: Save to both months collection AND root collection
+        // 4. Month-scoped notices
         for (let notice of state.notices) {
             await setDoc(doc(window.firebaseDb, "months", mKey, "notices", String(notice.id)), notice);
-            await setDoc(doc(window.firebaseDb, "notices", String(notice.id)), notice);
         }
 
-        // 5. Transactions: Save to both months collection AND root collection
+        // 5. Month-scoped transactions
         for (let txn of state.transactions) {
             await setDoc(doc(window.firebaseDb, "months", mKey, "transactions", String(txn.id)), txn);
-            await setDoc(doc(window.firebaseDb, "transactions", String(txn.id)), txn);
         }
     } catch (e) {
         console.error("Firebase save error:", e);
@@ -242,23 +240,19 @@ async function loadFromFirestore() {
     try {
         const { doc, getDoc } = await getFirestoreModule();
 
-        // 1. Load config if exists
+        // 1. Load global config
         try {
             const configSnap = await getDoc(doc(window.firebaseDb, "settings", "config"));
             if (configSnap && configSnap.exists()) {
                 const configData = configSnap.data();
-                if (configData.customAdjLabel) state.customAdjLabel = configData.customAdjLabel;
                 if (configData.adminPassword) state.adminPassword = configData.adminPassword;
                 if (configData.activeMonth) state.activeMonth = configData.activeMonth;
-                if (configData.fixedCosts && typeof configData.fixedCosts === 'object') {
-                    state.fixedCosts = { ...state.fixedCosts, ...configData.fixedCosts };
-                }
             }
         } catch (err) {
             console.warn("Firebase config load warning:", err);
         }
 
-        // 2. Load active month data from Firestore (with root collection fallback)
+        // 2. Load active month data from Firestore
         await loadMonthDataFromFirestore(state.activeMonth);
 
         updateMonthDisplayUI();
@@ -274,36 +268,43 @@ async function loadMonthDataFromFirestore(mKey) {
     try {
         const { doc, getDoc, collection, getDocs } = await getFirestoreModule();
 
-        // 1. Fixed costs: try month-scoped first
+        // 1. Fixed costs & custom adjustment label (month-scoped)
         let fixedLoaded = false;
         try {
             const fixedSnap = await getDoc(doc(window.firebaseDb, "months", mKey, "data", "fixedCosts"));
             if (fixedSnap && fixedSnap.exists()) {
-                state.fixedCosts = fixedSnap.data();
+                const fData = fixedSnap.data();
+                state.fixedCosts = { ...fData };
+                if (fData.customAdjLabel) {
+                    state.customAdjLabel = fData.customAdjLabel;
+                }
                 fixedLoaded = true;
             }
         } catch (err) {
             console.warn(`Firebase fixedCosts month load warning (${mKey}):`, err);
         }
 
-        // ONLY fallback to root settings/config if mKey is August 2026
+        // Fallback ONLY for August 2026 if months/2026-08 is not yet created
         if (!fixedLoaded && mKey === "2026-08") {
             try {
                 const configSnap = await getDoc(doc(window.firebaseDb, "settings", "config"));
                 if (configSnap && configSnap.exists()) {
                     const cfg = configSnap.data();
                     if (cfg.fixedCosts) state.fixedCosts = { ...state.fixedCosts, ...cfg.fixedCosts };
+                    if (cfg.customAdjLabel) state.customAdjLabel = cfg.customAdjLabel;
                     fixedLoaded = true;
                 }
             } catch (err) {
                 console.warn(`Firebase root fixedCosts load warning:`, err);
             }
         } else if (!fixedLoaded) {
-            // For other months when not created yet, default to clean or current template
+            // For other fresh months
             if (state.months && state.months[mKey] && state.months[mKey].fixedCosts) {
                 state.fixedCosts = { ...state.months[mKey].fixedCosts };
+                state.customAdjLabel = state.months[mKey].customAdjLabel || "ফ্রিজ ও অন্যান্য";
             } else {
                 state.fixedCosts = { ...createEmptyMonthData().fixedCosts };
+                state.customAdjLabel = "ফ্রিজ ও অন্যান্য";
             }
         }
 
@@ -324,7 +325,7 @@ async function loadMonthDataFromFirestore(mKey) {
             console.warn(`Firebase members month load warning (${mKey}):`, err);
         }
 
-        // ONLY fallback to root members collection for August 2026 (preserves real existing August data)
+        // ONLY fallback to root members collection for August 2026
         if (!membersLoaded && mKey === "2026-08") {
             try {
                 const rootMemSnap = await getDocs(collection(window.firebaseDb, "members"));
@@ -341,8 +342,7 @@ async function loadMonthDataFromFirestore(mKey) {
                 console.warn(`Firebase root members load warning:`, err);
             }
         } else if (!membersLoaded) {
-            // For other non-August months that do NOT exist in Firebase yet:
-            // Use clean month member template with auto previous month balance calculation
+            // Clean month template with auto-calculated rollover previous balance
             if (state.months && state.months[mKey] && state.months[mKey].members && state.months[mKey].members.length > 0) {
                 state.members = state.months[mKey].members.map(m => ({ ...m }));
             } else {
@@ -369,7 +369,6 @@ async function loadMonthDataFromFirestore(mKey) {
             console.warn(`Firebase notices month load warning (${mKey}):`, err);
         }
 
-        // ONLY fallback to root notices for August 2026
         if (!noticesLoaded && mKey === "2026-08") {
             try {
                 const rootNotSnap = await getDocs(collection(window.firebaseDb, "notices"));
@@ -406,7 +405,6 @@ async function loadMonthDataFromFirestore(mKey) {
             console.warn(`Firebase transactions month load warning (${mKey}):`, err);
         }
 
-        // ONLY fallback to root transactions for August 2026
         if (!txnsLoaded && mKey === "2026-08") {
             try {
                 const rootTxnSnap = await getDocs(collection(window.firebaseDb, "transactions"));
@@ -431,6 +429,7 @@ async function loadMonthDataFromFirestore(mKey) {
         if (!state.months) state.months = {};
         state.months[mKey] = {
             fixedCosts: { ...state.fixedCosts },
+            customAdjLabel: state.customAdjLabel,
             members: state.members.map(m => ({ ...m })),
             notices: state.notices.map(n => ({ ...n })),
             transactions: state.transactions.map(t => ({ ...t }))
@@ -442,6 +441,31 @@ async function loadMonthDataFromFirestore(mKey) {
 
 window.loadFromFirestore = loadFromFirestore;
 window.saveData = saveData;
+
+// ---------- Helper: Escape HTML ----------
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+// ---------- Adjustment Info Tooltip Handler ----------
+function toggleAdjInfoTooltip(e) {
+    if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }
+    const target = e ? e.currentTarget : null;
+    if (!target) return;
+    const badge = target.nextElementSibling;
+    if (badge) {
+        badge.style.display = (badge.style.display === 'block') ? 'none' : 'block';
+    }
+}
 
 // ---------- Hamburger Menu Handler ----------
 function toggleHamburgerMenu(forceState) {
@@ -746,7 +770,11 @@ function renderTransposedTable(mealRate, perHead) {
         { label: 'মিল সংখ্যা', key: 'meals' },
         { label: 'মিল খরচ (BDT)', calc: (m) => (Number(m.meals || 0) * mealRate).toFixed(2) },
         { label: 'গত মাসের বকেয়া (BDT)', key: 'prevAdj', isRawFormatted: true },
-        { label: `অন্যান্য (${state.customAdjLabel}) (BDT)`, key: 'fridgeAdj', isRawFormatted: true },
+        {
+            labelHtml: `অন্যান্য <button type="button" class="adj-info-btn" onclick="toggleAdjInfoTooltip(event)" title="বিস্তারিত বিবরণ">ℹ️</button><span class="adj-info-badge" style="display:none;">${escapeHtml(state.customAdjLabel || "এডজাস্টমেন্ট")}</span> (BDT)`,
+            key: 'fridgeAdj',
+            isRawFormatted: true
+        },
         { label: 'সর্বমোট খরচ (ভাড়া বাদে)', isTotalExp: true, rowClass: 'total-exp-row' },
         { label: 'বাজার জমা (BDT)', key: 'bazarDeposit', isDeposit: true },
         { label: 'সর্বমোট বকেয়া (ভাড়া বাদে)', isNetPayable: true, rowClass: 'payable-row' },
@@ -759,7 +787,8 @@ function renderTransposedTable(mealRate, perHead) {
 
     memberTbody.innerHTML = rowConfig.map(r => {
         let trClass = r.rowClass ? ` class="${r.rowClass}"` : '';
-        let html = `<tr${trClass}><td>${r.label}</td>`;
+        let labelContent = r.labelHtml || r.label;
+        let html = `<tr${trClass}><td>${labelContent}</td>`;
 
         state.members.forEach((m) => {
             const mealsNum = Number(m.meals || 0);
@@ -839,7 +868,7 @@ function renderTransactions() {
     $('excelTotalAmount').innerText = bdt(totalAmount);
 }
 
-// ---------- Highlight Member Column ----------
+// ---------- Highlight Member Column with Mobile Smooth Auto-Scroll ----------
 function highlightMemberColumn(memberName) {
     const table = document.querySelector('.horizontal-table');
     if (!table) return;
@@ -861,6 +890,34 @@ function highlightMemberColumn(memberName) {
             const cells = tr.children;
             if (cells[targetColIdx]) cells[targetColIdx].classList.add('highlight-column');
         });
+
+        // Mobile / Horizontal auto-scroll to the selected member column
+        const container = $('memberTableContainer') || table.closest('.table-responsive');
+        if (container) {
+            const targetTh = headerThs[targetColIdx];
+            const firstTh = headerThs[0];
+            if (targetTh && firstTh) {
+                const stickyWidth = firstTh.offsetWidth;
+                const containerWidth = container.clientWidth;
+                const visibleWidth = containerWidth - stickyWidth;
+
+                const cellCenter = targetTh.offsetLeft + (targetTh.offsetWidth / 2);
+                const viewportCenter = stickyWidth + (visibleWidth / 2);
+
+                let targetScrollLeft = Math.max(0, cellCenter - viewportCenter);
+
+                const memberIdx = state.members.findIndex(m => m.name === memberName);
+                const isLastMember = (memberIdx === state.members.length - 1);
+                if (!isLastMember) {
+                    targetScrollLeft = Math.max(0, targetScrollLeft - 6);
+                }
+
+                container.scrollTo({
+                    left: targetScrollLeft,
+                    behavior: 'smooth'
+                });
+            }
+        }
     }
 }
 
@@ -921,7 +978,7 @@ function renderDrawerInputs() {
     // Card 3: Notice List Preview
     const noticeBox = $('adminNoticeList');
     if (noticeBox) {
-        noticeBox.innerHTML = state.notices.map((n, idx) => `
+noticeBox.innerHTML = state.notices.map((n, idx) => `
             <div class="notice-item-admin ${n.type}">
                 <span style="flex:1; word-break:break-word;">${n.text.substring(0, 32)}...</span>
                 <button class="btn clay-btn clay-btn-danger" style="padding: 3px 8px; font-size: 11px; flex-shrink:0;" onclick="deleteNotice(${idx})">ডিলিট</button>
@@ -1002,7 +1059,7 @@ function renderMemberEditForm() {
                     <input type="number" id="single_mem_rent" class="drawer-input" value="${m.rent || 0}">
                 </div>
                 <div class="input-group">
-                    <label>✨ অন্যান্য (${state.customAdjLabel}):</label>
+                    <label>✨ অন্যান্য <button type="button" class="adj-info-btn" onclick="toggleAdjInfoTooltip(event)" title="বিবরণ দেখুন">ℹ️</button><span class="adj-info-badge" style="display:none;">${escapeHtml(state.customAdjLabel || "এডজাস্টমেন্ট")}</span>:</label>
                     <input type="number" id="single_mem_fridge" class="drawer-input" value="${m.fridgeAdj || 0}">
                 </div>
             </div>
@@ -1077,7 +1134,6 @@ function deleteTransaction(txnId) {
                     const { doc, deleteDoc } = await getFirestoreModule();
                     const mKey = state.activeMonth;
                     await deleteDoc(doc(window.firebaseDb, "months", mKey, "transactions", String(txnId)));
-                    await deleteDoc(doc(window.firebaseDb, "transactions", String(txnId)));
                 } catch (e) {
                     console.error("Firebase delete transaction error:", e);
                 }
@@ -1100,7 +1156,6 @@ function deleteNotice(idx) {
             .then(async ({ doc, deleteDoc }) => {
                 const mKey = state.activeMonth;
                 await deleteDoc(doc(window.firebaseDb, "months", mKey, "notices", String(noticeId)));
-                await deleteDoc(doc(window.firebaseDb, "notices", String(noticeId)));
             })
             .catch(e => console.error("Firebase delete notice error:", e));
     }
@@ -1120,7 +1175,7 @@ function addNewNotice() {
     $('newNoticeText').value = '';
     closeNoticeModal();
     saveData();
-    showToast("নতুন নোটিশ যোগ করা হয়েছে!", "success");
+    showToast("নতুন নোটিশ প্রকাশিত হয়েছে!", "success");
 }
 
 function saveFixedCosts() {
@@ -1144,44 +1199,230 @@ function saveFixedCosts() {
     showToast("ইউটিলিটি খরচ ও এডজাস্টমেন্ট নাম সেভ করা হয়েছে!", "success");
 }
 
-// ---------- COMPREHENSIVE EXPORT & PRINT ----------
+// ---------- Multi-Sheet Excel & CSV Exports ----------
+function exportMultiSheetExcel() {
+    calculateAll();
+    const mKey = state.activeMonth;
+    const mLabel = getBengaliMonthLabel(mKey);
+
+    const totalMeals = state.members.reduce((s, m) => s + Number(m.meals || 0), 0);
+    const totalBazarExp = state.members.reduce((s, m) => s + Number(m.bazarDeposit || 0), 0);
+    const mealRate = totalMeals > 0 ? (totalBazarExp / totalMeals) : 0;
+    const numMembers = state.members.length || 6;
+    const elecPH = (Number(state.fixedCosts.electricity || 0) / numMembers);
+    const gasPH = (Number(state.fixedCosts.gas || 0) / numMembers);
+    const waterPH = (Number(state.fixedCosts.waterBill || 0) / numMembers);
+    const wifiPH = (Number(state.fixedCosts.wifi || 0) / numMembers);
+    const khalaPH = (Number(state.fixedCosts.khala || 0) / numMembers);
+    const wastePH = (Number(state.fixedCosts.waste || 0) / numMembers);
+    const fixedTotal = Number(state.fixedCosts.electricity || 0) + Number(state.fixedCosts.gas || 0) + Number(state.fixedCosts.waterBill || 0) + Number(state.fixedCosts.wifi || 0) + Number(state.fixedCosts.khala || 0) + Number(state.fixedCosts.waste || 0);
+    const fixedPerHead = fixedTotal / numMembers;
+
+    // Sheet 1: মেস সামারি
+    const sheet1Xml = `
+    <Worksheet ss:Name="মেস সামারি">
+        <Table>
+            <Row><Cell><Data ss:Type="String">ISOTOPE মেস মোট হিসাব সামারি (${mLabel})</Data></Cell></Row>
+            <Row>
+                <Cell><Data ss:Type="String">খরচের খাত / বিবরণ</Data></Cell>
+                <Cell><Data ss:Type="String">মোট পরিমাণ (BDT)</Data></Cell>
+                <Cell><Data ss:Type="String">জনপ্রতি ভাগ (BDT)</Data></Cell>
+            </Row>
+            <Row>
+                <Cell><Data ss:Type="String">মোট মিল সংখ্যা</Data></Cell>
+                <Cell><Data ss:Type="Number">${totalMeals}</Data></Cell>
+                <Cell><Data ss:Type="String">-</Data></Cell>
+            </Row>
+            <Row>
+                <Cell><Data ss:Type="String">মোট বাজার খরচ</Data></Cell>
+                <Cell><Data ss:Type="Number">${totalBazarExp}</Data></Cell>
+                <Cell><Data ss:Type="String">মিল রেট: ${mealRate.toFixed(2)}</Data></Cell>
+            </Row>
+            <Row>
+                <Cell><Data ss:Type="String">কারেন্ট বিল</Data></Cell>
+                <Cell><Data ss:Type="Number">${state.fixedCosts.electricity}</Data></Cell>
+                <Cell><Data ss:Type="Number">${elecPH.toFixed(2)}</Data></Cell>
+            </Row>
+            <Row>
+                <Cell><Data ss:Type="String">গ্যাস বিল</Data></Cell>
+                <Cell><Data ss:Type="Number">${state.fixedCosts.gas}</Data></Cell>
+                <Cell><Data ss:Type="Number">${gasPH.toFixed(2)}</Data></Cell>
+            </Row>
+            <Row>
+                <Cell><Data ss:Type="String">পানির বিল (${state.fixedCosts.waterBottleCount || 40} বোতল)</Data></Cell>
+                <Cell><Data ss:Type="Number">${state.fixedCosts.waterBill}</Data></Cell>
+                <Cell><Data ss:Type="Number">${waterPH.toFixed(2)}</Data></Cell>
+            </Row>
+            <Row>
+                <Cell><Data ss:Type="String">ওয়াইফাই বিল</Data></Cell>
+                <Cell><Data ss:Type="Number">${state.fixedCosts.wifi}</Data></Cell>
+                <Cell><Data ss:Type="Number">${wifiPH.toFixed(2)}</Data></Cell>
+            </Row>
+            <Row>
+                <Cell><Data ss:Type="String">খালার বিল</Data></Cell>
+                <Cell><Data ss:Type="Number">${state.fixedCosts.khala}</Data></Cell>
+                <Cell><Data ss:Type="Number">${khalaPH.toFixed(2)}</Data></Cell>
+            </Row>
+            <Row>
+                <Cell><Data ss:Type="String">ময়লার বিল</Data></Cell>
+                <Cell><Data ss:Type="Number">${state.fixedCosts.waste}</Data></Cell>
+                <Cell><Data ss:Type="Number">${wastePH.toFixed(2)}</Data></Cell>
+            </Row>
+            <Row>
+                <Cell><Data ss:Type="String">সর্বমোট ফিক্সড/ইউটিলিটি খরচ</Data></Cell>
+                <Cell><Data ss:Type="Number">${fixedTotal}</Data></Cell>
+                <Cell><Data ss:Type="Number">${fixedPerHead.toFixed(2)}</Data></Cell>
+            </Row>
+            <Row>
+                <Cell><Data ss:Type="String">সর্বমোট মেস খরচ</Data></Cell>
+                <Cell><Data ss:Type="Number">${(totalBazarExp + fixedTotal).toFixed(2)}</Data></Cell>
+                <Cell><Data ss:Type="String">-</Data></Cell>
+            </Row>
+        </Table>
+    </Worksheet>`;
+
+    // Sheet 2: সদস্যভিত্তিক হিসাব
+    let sheet2Rows = `<Row><Cell><Data ss:Type="String">আইটেম / সদস্য</Data></Cell>`;
+    state.members.forEach(m => {
+        sheet2Rows += `<Cell><Data ss:Type="String">${m.name}</Data></Cell>`;
+    });
+    sheet2Rows += `</Row>`;
+
+    const memberRowConfig = [
+        { label: 'কারেন্ট বিল (BDT)', fn: () => elecPH.toFixed(2) },
+        { label: 'গ্যাস বিল (BDT)', fn: () => gasPH.toFixed(2) },
+        { label: 'পানির বিল (BDT)', fn: () => waterPH.toFixed(2) },
+        { label: 'ওয়াইফাই বিল (BDT)', fn: () => wifiPH.toFixed(2) },
+        { label: 'খালার বিল (BDT)', fn: () => khalaPH.toFixed(2) },
+        { label: 'ময়লার বিল (BDT)', fn: () => wastePH.toFixed(2) },
+        { label: 'মিল সংখ্যা', fn: m => m.meals },
+        { label: 'মিল খরচ (BDT)', fn: m => (Number(m.meals || 0) * mealRate).toFixed(2) },
+        { label: 'গত মাসের বকেয়া (BDT)', fn: m => m.prevAdj },
+        { label: `অন্যান্য (${state.customAdjLabel || 'এডজাস্টমেন্ট'}) (BDT)`, fn: m => m.fridgeAdj },
+        { label: 'সর্বমোট খরচ (ভাড়া বাদে)', fn: m => {
+            const u = fixedPerHead;
+            return (u + (Number(m.meals || 0) * mealRate) + Number(m.prevAdj || 0) + Number(m.fridgeAdj || 0)).toFixed(2);
+        }},
+        { label: 'বাজার জমা (BDT)', fn: m => m.bazarDeposit },
+        { label: 'সিট ভাড়া (BDT)', fn: m => m.rent },
+        { label: 'সর্বমোট জমা (BDT)', fn: m => {
+            return state.transactions.filter(t => t.member === m.name).reduce((s, t) => s + Number(t.amount || 0), 0).toFixed(2);
+        }},
+        { label: 'মোট প্রদেয় / বকেয়া (ভাড়াসহ)', fn: m => {
+            const u = fixedPerHead;
+            const exp = u + (Number(m.meals || 0) * mealRate) + Number(m.prevAdj || 0) + Number(m.fridgeAdj || 0) - Number(m.bazarDeposit || 0);
+            const dep = state.transactions.filter(t => t.member === m.name).reduce((s, t) => s + Number(t.amount || 0), 0);
+            return ((exp + Number(m.rent || 0)) - dep).toFixed(2);
+        }}
+    ];
+
+    memberRowConfig.forEach(r => {
+        sheet2Rows += `<Row><Cell><Data ss:Type="String">${r.label}</Data></Cell>`;
+        state.members.forEach(m => {
+            sheet2Rows += `<Cell><Data ss:Type="String">${r.fn(m)}</Data></Cell>`;
+        });
+        sheet2Rows += `</Row>`;
+    });
+
+    const sheet2Xml = `
+    <Worksheet ss:Name="সদস্যভিত্তিক হিসাব">
+        <Table>
+            ${sheet2Rows}
+        </Table>
+    </Worksheet>`;
+
+    // Sheet 3: ট্রানজেকশন লগ
+    let sheet3Rows = `
+        <Row>
+            <Cell><Data ss:Type="String">SL</Data></Cell>
+            <Cell><Data ss:Type="String">তারিখ ও সময়</Data></Cell>
+            <Cell><Data ss:Type="String">সদস্যের নাম</Data></Cell>
+            <Cell><Data ss:Type="String">বিবরণ / নোট</Data></Cell>
+            <Cell><Data ss:Type="String">জমার পরিমাণ (BDT)</Data></Cell>
+        </Row>`;
+
+    let txnTotal = 0;
+    state.transactions.forEach((t, idx) => {
+        txnTotal += Number(t.amount || 0);
+        sheet3Rows += `
+        <Row>
+            <Cell><Data ss:Type="Number">${idx + 1}</Data></Cell>
+            <Cell><Data ss:Type="String">${t.date}</Data></Cell>
+            <Cell><Data ss:Type="String">${t.member}</Data></Cell>
+            <Cell><Data ss:Type="String">${t.note}</Data></Cell>
+            <Cell><Data ss:Type="Number">${t.amount}</Data></Cell>
+        </Row>`;
+    });
+    sheet3Rows += `
+        <Row>
+            <Cell><Data ss:Type="String"></Data></Cell>
+            <Cell><Data ss:Type="String"></Data></Cell>
+            <Cell><Data ss:Type="String"></Data></Cell>
+            <Cell><Data ss:Type="String">সর্বমোট জমা</Data></Cell>
+            <Cell><Data ss:Type="Number">${txnTotal.toFixed(2)}</Data></Cell>
+        </Row>`;
+
+    const sheet3Xml = `
+    <Worksheet ss:Name="ট্রানজেকশন লগ">
+        <Table>
+            ${sheet3Rows}
+        </Table>
+    </Worksheet>`;
+
+    const excelXml = `<?xml version="1.0"?>
+    <?mso-application progid="Excel.Sheet"?>
+    <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+     xmlns:o="urn:schemas-microsoft-com:office:office"
+     xmlns:x="urn:schemas-microsoft-com:excel"
+     xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+     xmlns:html="http://www.w3.org/TR/REC-html40">
+     ${sheet1Xml}
+     ${sheet2Xml}
+     ${sheet3Xml}
+    </Workbook>`;
+
+    const blob = new Blob([excelXml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Isotope_Mess_MultiSheet_${mKey}_${new Date().toISOString().slice(0, 10)}.xls`;
+    link.click();
+    showToast("মাল্টি-শিট Excel ফাইল সফলভাবে ডাউনলোড হয়েছে!", "success");
+}
+
 function exportCSV() {
-    const monthLabel = getBengaliMonthLabel(state.activeMonth);
-    const memberCount = state.members.length || 1;
-
-    let elecPerHead = Number(state.fixedCosts.electricity || 0) / memberCount;
-    let gasPerHead = Number(state.fixedCosts.gas || 0) / memberCount;
-    let waterPerHead = Number(state.fixedCosts.waterBill || 0) / memberCount;
-    let wifiPerHead = Number(state.fixedCosts.wifi || 0) / memberCount;
-    let khalaPerHead = Number(state.fixedCosts.khala || 0) / memberCount;
-    let wastePerHead = Number(state.fixedCosts.waste || 0) / memberCount;
-    let fixedPerHeadTotal = elecPerHead + gasPerHead + waterPerHead + wifiPerHead + khalaPerHead + wastePerHead;
-
-    let totalMeals = state.members.reduce((acc, m) => acc + Number(m.meals || 0), 0);
-    let totalBazar = state.members.reduce((acc, m) => acc + Number(m.bazarDeposit || 0), 0);
-    let totalSeatRent = state.members.reduce((acc, m) => acc + Number(m.rent || 0), 0);
-    let totalFixedCosts = Number(state.fixedCosts.electricity || 0) + Number(state.fixedCosts.gas || 0) + Number(state.fixedCosts.waterBill || 0) + Number(state.fixedCosts.wifi || 0) + Number(state.fixedCosts.khala || 0) + Number(state.fixedCosts.waste || 0);
-    let grandTotalCost = totalBazar + totalFixedCosts + totalSeatRent;
-
-    let rawMealRate = totalMeals > 0 ? (totalBazar / totalMeals) : 0;
-    let mealRate = Math.round(rawMealRate * 100) / 100;
-
-    let csv = `\uFEFF"=== ISOTOPE মেস হিসাব বিবরণী (${monthLabel}) ==="\n\n`;
+    calculateAll();
+    let csv = `\uFEFF`; // UTF-8 BOM
 
     // Section 1: মেসের মোট হিসাব সামারি
     csv += `"1. মেসের মোট হিসাব সামারি"\n`;
-    csv += `"বিবরণ / আইটেম","মোট পরিমাণ (BDT)","জনপ্রতি ভাগ (BDT)"\n`;
-    csv += `"মোট বাজার খরচ","${totalBazar.toFixed(2)}","জমা অনুযায়ী"\n`;
-    csv += `"মোট মিল সংখ্যা","${totalMeals} টি","${memberCount} জন সদস্য"\n`;
-    csv += `"মিল রেট (Meal Rate)","${mealRate.toFixed(2)}","অটো ক্যালকুলেটেড"\n`;
-    csv += `"মোট সিট ভাড়া","${totalSeatRent.toFixed(2)}","নির্দিষ্ট সিট রেট"\n`;
-    csv += `"কারেন্ট বিল","${Number(state.fixedCosts.electricity || 0).toFixed(2)}","${elecPerHead.toFixed(2)}"\n`;
-    csv += `"গ্যাস বিল","${Number(state.fixedCosts.gas || 0).toFixed(2)}","${gasPerHead.toFixed(2)}"\n`;
-    csv += `"পানির বিল","${Number(state.fixedCosts.waterBill || 0).toFixed(2)}","${waterPerHead.toFixed(2)}"\n`;
-    csv += `"ওয়াইফাই বিল","${Number(state.fixedCosts.wifi || 0).toFixed(2)}","${wifiPerHead.toFixed(2)}"\n`;
-    csv += `"খালার বিল","${Number(state.fixedCosts.khala || 0).toFixed(2)}","${khalaPerHead.toFixed(2)}"\n`;
-    csv += `"ময়লার বিল","${Number(state.fixedCosts.waste || 0).toFixed(2)}","${wastePerHead.toFixed(2)}"\n`;
-    csv += `"সর্বমোট মেস খরচ","${grandTotalCost.toFixed(2)}","-"\n\n`;
+    csv += `"খরচের খাত / বিবরণ","মোট পরিমাণ (BDT)","জনপ্রতি ভাগ (BDT)"\n`;
+
+    let totalMeals = state.members.reduce((s, m) => s + Number(m.meals || 0), 0);
+    let totalBazarExp = state.members.reduce((s, m) => s + Number(m.bazarDeposit || 0), 0);
+    let mealRate = totalMeals > 0 ? (totalBazarExp / totalMeals) : 0;
+    let numMembers = state.members.length || 6;
+
+    let elecPerHead = (Number(state.fixedCosts.electricity || 0) / numMembers);
+    let gasPerHead = (Number(state.fixedCosts.gas || 0) / numMembers);
+    let waterPerHead = (Number(state.fixedCosts.waterBill || 0) / numMembers);
+    let wifiPerHead = (Number(state.fixedCosts.wifi || 0) / numMembers);
+    let khalaPerHead = (Number(state.fixedCosts.khala || 0) / numMembers);
+    let wastePerHead = (Number(state.fixedCosts.waste || 0) / numMembers);
+    let fixedTotal = Number(state.fixedCosts.electricity || 0) + Number(state.fixedCosts.gas || 0) + Number(state.fixedCosts.waterBill || 0) + Number(state.fixedCosts.wifi || 0) + Number(state.fixedCosts.khala || 0) + Number(state.fixedCosts.waste || 0);
+    let fixedPerHeadTotal = fixedTotal / numMembers;
+
+    csv += `"মোট মিল সংখ্যা","${totalMeals}","-"\n`;
+    csv += `"মোট বাজার খরচ","${totalBazarExp}","মিল রেট: ${mealRate.toFixed(2)}"\n`;
+    csv += `"কারেন্ট বিল","${state.fixedCosts.electricity}","${elecPerHead.toFixed(2)}"\n`;
+    csv += `"গ্যাস বিল","${state.fixedCosts.gas}","${gasPerHead.toFixed(2)}"\n`;
+    csv += `"পানির বিল","${state.fixedCosts.waterBill}","${waterPerHead.toFixed(2)}"\n`;
+    csv += `"ওয়াইফাই বিল","${state.fixedCosts.wifi}","${wifiPerHead.toFixed(2)}"\n`;
+    csv += `"খালার বিল","${state.fixedCosts.khala}","${khalaPerHead.toFixed(2)}"\n`;
+    csv += `"ময়লার বিল","${state.fixedCosts.waste}","${wastePerHead.toFixed(2)}"\n`;
+    csv += `"সর্বমোট ফিক্সড খরচ","${fixedTotal}","${fixedPerHeadTotal.toFixed(2)}"\n`;
+    csv += `"সর্বমোট মেস খরচ","${(totalBazarExp + fixedTotal).toFixed(2)}","-"\n`;
+
+    csv += `\n`;
 
     // Section 2: সদস্যভিত্তিক বিস্তারিত হিসাব সামারি
     csv += `"2. সদস্যভিত্তিক বিস্তারিত হিসাব সামারি"\n`;
