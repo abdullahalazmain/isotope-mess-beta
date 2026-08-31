@@ -463,7 +463,9 @@ function toggleAdjInfoTooltip(e) {
     if (!target) return;
     const badge = target.nextElementSibling;
     if (badge) {
-        badge.style.display = (badge.style.display === 'block') ? 'none' : 'block';
+        const isShown = (badge.style.display === 'block');
+        document.querySelectorAll('.adj-info-badge').forEach(b => b.style.display = 'none');
+        badge.style.display = isShown ? 'none' : 'block';
     }
 }
 
@@ -483,6 +485,9 @@ document.addEventListener('click', (e) => {
         const menu = $('hamburgerMenuDropdown');
         if (menu) menu.style.display = 'none';
     }
+    if (!e.target.closest('.adj-info-wrapper')) {
+        document.querySelectorAll('.adj-info-badge').forEach(b => b.style.display = 'none');
+    }
 });
 
 // ---------- Auto Previous Month Balance Calculation ----------
@@ -498,6 +503,8 @@ function getPrevMonthKey(mKey) {
 }
 
 function calculatePrevMonthBalanceForMember(mKey, memberName) {
+    if (mKey === "2026-01") return 0;
+
     const prevKey = getPrevMonthKey(mKey);
     const prevData = state.months ? state.months[prevKey] : null;
     if (!prevData || !prevData.members || prevData.members.length === 0) {
@@ -547,6 +554,7 @@ function switchMonth(targetMonthKey) {
     if (state.months && state.activeMonth) {
         state.months[state.activeMonth] = {
             fixedCosts: { ...state.fixedCosts },
+            customAdjLabel: state.customAdjLabel,
             members: state.members.map(m => ({ ...m })),
             notices: state.notices.map(n => ({ ...n })),
             transactions: state.transactions.map(t => ({ ...t }))
@@ -562,12 +570,13 @@ function switchMonth(targetMonthKey) {
 
     const mData = state.months[targetMonthKey];
     state.fixedCosts = { ...mData.fixedCosts };
+    state.customAdjLabel = mData.customAdjLabel || "ফ্রিজ ও অন্যান্য";
     state.members = mData.members.map(m => ({ ...m }));
     state.notices = mData.notices.map(n => ({ ...n }));
     state.transactions = mData.transactions.map(t => ({ ...t }));
 
-    // Auto calculate previous month balance for non-August months
-    if (targetMonthKey !== "2026-08") {
+    // Auto calculate previous month balance for February through December
+    if (targetMonthKey !== "2026-01") {
         state.members.forEach(m => {
             m.prevAdj = calculatePrevMonthBalanceForMember(targetMonthKey, m.name);
         });
@@ -578,6 +587,15 @@ function switchMonth(targetMonthKey) {
     calculateAll();
     persistLocally();
     showToast(`${getBengaliMonthLabel(targetMonthKey)}-এর হিসাব ওপেন করা হয়েছে`, "info");
+
+    if (window.firebaseDb) {
+        loadMonthDataFromFirestore(targetMonthKey).then(() => {
+            calculateAll();
+            persistLocally();
+            updateMonthDisplayUI();
+        });
+    }
+}
 
     if (window.firebaseDb) {
         loadMonthDataFromFirestore(targetMonthKey).then(() => {
@@ -679,6 +697,13 @@ function updateWaterBillCalc() {
 function calculateAll() {
     ensureMemberOrder();
 
+    // Auto calculate previous month balance for February through December
+    if (state.activeMonth && state.activeMonth !== "2026-01") {
+        state.members.forEach(m => {
+            m.prevAdj = calculatePrevMonthBalanceForMember(state.activeMonth, m.name);
+        });
+    }
+
     const memberCount = state.members.length || 1;
     const perHead = {
         elec: Number(state.fixedCosts.electricity || 0) / memberCount,
@@ -771,7 +796,7 @@ function renderTransposedTable(mealRate, perHead) {
         { label: 'মিল খরচ (BDT)', calc: (m) => (Number(m.meals || 0) * mealRate).toFixed(2) },
         { label: 'গত মাসের বকেয়া (BDT)', key: 'prevAdj', isRawFormatted: true },
         {
-            labelHtml: `অন্যান্য <button type="button" class="adj-info-btn" onclick="toggleAdjInfoTooltip(event)" title="বিস্তারিত বিবরণ">ℹ️</button><span class="adj-info-badge" style="display:none;">${escapeHtml(state.customAdjLabel || "এডজাস্টমেন্ট")}</span> (BDT)`,
+            labelHtml: `অন্যান্য <span class="adj-info-wrapper"><button type="button" class="adj-info-btn" onclick="toggleAdjInfoTooltip(event)" title="বিস্তারিত বিবরণ">ℹ️</button><span class="adj-info-badge" style="display:none;">${escapeHtml(state.customAdjLabel || "এডজাস্টমেন্ট")}</span></span> (BDT)`,
             key: 'fridgeAdj',
             isRawFormatted: true
         },
@@ -962,8 +987,8 @@ function renderDrawerInputs() {
                         <input type="number" id="inp_water_price" class="drawer-input water-calc-input" value="${wbPrice}" oninput="updateWaterBillCalc()">
                     </div>
                     <div class="water-calc-item">
-                        <label class="water-calc-label highlight" title="সর্বমোট পানির বিল">সর্বমোট পানির বিল</label>
-                        <input type="number" id="inp_water" class="drawer-input water-calc-input" value="${wbTotal}" style="font-weight: bold; color: #1e40af; background: #ffffff;">
+                        <label class="water-calc-label highlight" title="সর্বমোট পানির বিল">মোট বিল (BDT)</label>
+                        <input type="number" id="inp_water" class="drawer-input water-calc-input" value="${wbTotal}" readonly style="background:#e2e8f0; font-weight:700; color:#1e40af;">
                     </div>
                 </div>
             </div>
@@ -971,35 +996,32 @@ function renderDrawerInputs() {
             <div class="input-group"><label>ওয়াইফাই বিল (BDT)</label><input type="number" id="inp_wifi" class="drawer-input" value="${state.fixedCosts.wifi}"></div>
             <div class="input-group"><label>খালার বিল (BDT)</label><input type="number" id="inp_khala" class="drawer-input" value="${state.fixedCosts.khala}"></div>
             <div class="input-group"><label>ময়লার বিল (BDT)</label><input type="number" id="inp_waste" class="drawer-input" value="${state.fixedCosts.waste}"></div>
-            <div class="input-group"><label>অন্যান্য এডজাস্টমেন্টের নাম:</label><input type="text" id="customAdjLabelInput" class="drawer-input" value="${state.customAdjLabel}"></div>
+            <div class="input-group input-group-full"><label>অন্যান্য এডজাস্টমেন্টের নাম:</label><input type="text" id="customAdjLabelInput" class="drawer-input" value="${state.customAdjLabel || 'ফ্রিজ ও অন্যান্য'}"></div>
         `;
+    }
+
+    // Card 3: Member Selector & Single Member Edit Form
+    const adminMemberSelect = $('adminMemberSelect');
+    if (adminMemberSelect) {
+        const prevSelected = adminMemberSelect.value;
+        populateSelect(adminMemberSelect, memberNames, "👤 মেম্বার নির্বাচন করুন");
+        if (prevSelected !== "" && state.members[prevSelected]) {
+            adminMemberSelect.value = prevSelected;
+        } else if (state.members.length > 0) {
+            adminMemberSelect.value = "0"; // auto-select first member
+        }
+        renderMemberEditForm();
     }
 
     // Card 3: Notice List Preview
     const noticeBox = $('adminNoticeList');
     if (noticeBox) {
-noticeBox.innerHTML = state.notices.map((n, idx) => `
+        noticeBox.innerHTML = state.notices.map((n, idx) => `
             <div class="notice-item-admin ${n.type}">
                 <span style="flex:1; word-break:break-word;">${n.text.substring(0, 32)}...</span>
                 <button class="btn clay-btn clay-btn-danger" style="padding: 3px 8px; font-size: 11px; flex-shrink:0;" onclick="deleteNotice(${idx})">ডিলিট</button>
             </div>
         `).join('');
-    }
-
-    // Card 4: Single Member Selector & Form
-    const adminMemberSelect = $('adminMemberSelect');
-    if (adminMemberSelect) {
-        const currentSelected = adminMemberSelect.value;
-        adminMemberSelect.innerHTML = '<option value="">-- সদস্য নির্বাচন করুন --</option>';
-        state.members.forEach((m, idx) => {
-            adminMemberSelect.innerHTML += `<option value="${idx}">${m.name}</option>`;
-        });
-        if (currentSelected !== "") {
-            adminMemberSelect.value = currentSelected;
-        } else if (state.members.length > 0) {
-            adminMemberSelect.value = "0"; // Default to first member
-        }
-        renderMemberEditForm();
     }
 }
 
@@ -1023,17 +1045,34 @@ function renderMemberEditForm() {
 
     const m = state.members[selectedIdx];
     const prevAdjVal = Number(m.prevAdj || 0);
+    const isJanuary = (state.activeMonth === "2026-01");
 
     // Render clean badge in selector bar
     if (badgeEl) {
         if (prevAdjVal > 0) {
-            badgeEl.innerHTML = `<span class="badge-pill" style="background:#fee2e2; color:#991b1b; border:1px solid #f87171;">⬆ বকেয়া: BDT ${prevAdjVal.toFixed(2)} (পূর্ববর্তী মাস)</span>`;
+            badgeEl.innerHTML = `<span class="badge-pill" style="background:#fee2e2; color:#991b1b; border:1px solid #f87171;">⬆ বকেয়া: BDT ${prevAdjVal.toFixed(2)} (${isJanuary ? 'প্রারম্ভিক' : 'পূর্ববর্তী মাস'})</span>`;
         } else if (prevAdjVal < 0) {
-            badgeEl.innerHTML = `<span class="badge-pill" style="background:#dcfce7; color:#166534; border:1px solid #4ade80;">⬇ জমা: BDT ${Math.abs(prevAdjVal).toFixed(2)} (পূর্ববর্তী মাস)</span>`;
+            badgeEl.innerHTML = `<span class="badge-pill" style="background:#dcfce7; color:#166534; border:1px solid #4ade80;">⬇ জমা: BDT ${Math.abs(prevAdjVal).toFixed(2)} (${isJanuary ? 'প্রারম্ভিক' : 'পূর্ববর্তী মাস'})</span>`;
         } else {
             badgeEl.innerHTML = `<span class="badge-pill" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">সমন্বয়: 0.00</span>`;
         }
     }
+
+    const prevAdjFieldHtml = isJanuary ? `
+        <div class="input-group" style="grid-column: 1 / -1; margin-top: 4px;">
+            <label>⏮️ পূর্ববর্তী মাসের বকেয়া/জমা (BDT):</label>
+            <input type="number" id="single_mem_prev" class="drawer-input" value="${m.prevAdj || 0}">
+            <span style="color:#64748b; font-size:11px;">(জানুয়ারি মাসের প্রারম্ভিক বকেয়া বা জমা ম্যানুয়ালি ইনপুট দিন)</span>
+        </div>
+    ` : `
+        <div class="prev-adj-info-box" style="margin-bottom: 14px; grid-column: 1 / -1;">
+            <span class="prev-adj-info-icon">ℹ️</span>
+            <div>
+                <strong>গত মাসের সমন্বয়:</strong> BDT ${prevAdjVal.toFixed(2)}
+                <span style="color:#64748b; font-size:11px;">(পূর্বের মাসের মোট হিসাব থেকে স্বয়ংক্রিয়ভাবে ক্যালকুলেটেড)</span>
+            </div>
+        </div>
+    `;
 
     container.innerHTML = `
         <div class="member-single-edit-card clay-inset">
@@ -1059,17 +1098,10 @@ function renderMemberEditForm() {
                     <input type="number" id="single_mem_rent" class="drawer-input" value="${m.rent || 0}">
                 </div>
                 <div class="input-group">
-                    <label>✨ অন্যান্য <button type="button" class="adj-info-btn" onclick="toggleAdjInfoTooltip(event)" title="বিবরণ দেখুন">ℹ️</button><span class="adj-info-badge" style="display:none;">${escapeHtml(state.customAdjLabel || "এডজাস্টমেন্ট")}</span>:</label>
+                    <label>✨ অন্যান্য <span class="adj-info-wrapper"><button type="button" class="adj-info-btn" onclick="toggleAdjInfoTooltip(event)" title="বিবরণ দেখুন">ℹ️</button><span class="adj-info-badge" style="display:none;">${escapeHtml(state.customAdjLabel || "এডজাস্টমেন্ট")}</span></span>:</label>
                     <input type="number" id="single_mem_fridge" class="drawer-input" value="${m.fridgeAdj || 0}">
                 </div>
-            </div>
-
-            <div class="prev-adj-info-box" style="margin-bottom: 14px;">
-                <span class="prev-adj-info-icon">ℹ️</span>
-                <div>
-                    <strong>গত মাসের সমন্বয়:</strong> BDT ${prevAdjVal.toFixed(2)}
-                    <span style="color:#64748b; font-size:11px;">(পূর্বের মাসের মোট হিসাব থেকে স্বয়ংক্রিয়ভাবে ক্যালকুলেটেড)</span>
-                </div>
+                ${prevAdjFieldHtml}
             </div>
 
             <button class="btn clay-btn clay-btn-primary full-width-btn" onclick="saveSelectedMemberData(${selectedIdx})">
@@ -1086,6 +1118,10 @@ function saveSelectedMemberData(idx) {
     state.members[idx].bazarDeposit = numVal('single_mem_bazar');
     state.members[idx].rent = numVal('single_mem_rent');
     state.members[idx].fridgeAdj = numVal('single_mem_fridge');
+
+    if (state.activeMonth === "2026-01" && $('single_mem_prev')) {
+        state.members[idx].prevAdj = numVal('single_mem_prev');
+    }
 
     saveData();
     showToast(`${memberName}-এর তথ্য সফলভাবে আপডেট করা হয়েছে!`, "success");
@@ -1661,7 +1697,7 @@ function updateAdminUIState() {
     }
     const mobileAdminBtnText = $('mobileAdminBtnText');
     if (mobileAdminBtnText) {
-        mobileAdminBtnText.innerText = state.isAdmin ? "🛡️ এডমিন প্যানেল" : "🛡️ এডমিন কন্ট্রোল";
+        mobileAdminBtnText.innerText = state.isAdmin ? "এডমিন প্যানেল" : "এডমিন কন্ট্রোল";
     }
     renderTransactions();
 }
