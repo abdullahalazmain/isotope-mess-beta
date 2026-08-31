@@ -642,36 +642,60 @@ th.highlight-column {
     background: #eff6ff;
 }
 
-/* Custom Adjustment (i) Button & Tooltip Badge */
+/* Custom Adjustment (i) Button & Floating Tooltip Popover */
+.adj-info-wrapper {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+}
 .adj-info-btn {
     background: transparent;
     border: none;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
     margin-left: 3px;
-    padding: 0;
+    padding: 2px 5px;
+    border-radius: 6px;
     vertical-align: middle;
     display: inline-flex;
     align-items: center;
-    opacity: 0.8;
-    transition: opacity 0.2s;
+    justify-content: center;
+    color: #2563eb;
+    transition: background 0.15s ease;
 }
 .adj-info-btn:hover {
-    opacity: 1;
+    background: rgba(37, 99, 235, 0.12);
 }
 .adj-info-badge {
-    display: block;
-    margin-top: 4px;
-    padding: 3px 6px;
-    background: #f1f5f9;
-    color: #334155;
-    border-radius: 6px;
-    font-size: 11px;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #f8fafc;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 11.5px;
     font-weight: 500;
-    border: 1px solid #cbd5e1;
+    white-space: nowrap;
+    z-index: 9999;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.28);
+    pointer-events: auto;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    max-width: 260px;
+    text-align: center;
+    line-height: 1.4;
     word-break: break-word;
-    max-width: 175px;
-    box-shadow: inset 1px 1px 2px #e2e8f0;
+}
+.adj-info-badge::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #1e293b;
 }
 
 /* ======================================================== */
