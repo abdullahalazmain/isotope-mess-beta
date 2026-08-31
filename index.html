@@ -46,7 +46,139 @@
     </div>
 </div>
 
-<!-- MAIN DASHBOARD VIEW -->
+<!-- Admin Password Modal -->
+<div id="adminModal" class="modal">
+    <div class="modal-content clay-card" style="max-width: 380px;">
+        <div class="confirm-icon-box">
+            <svg class="svg-icon svg-icon-large primary-color" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+        </div>
+        <h3 id="adminModalTitle">এডমিন সিকিউরিটি এক্সেস</h3>
+        
+        <!-- Standard Unlock View -->
+        <div id="adminUnlockView">
+            <p style="font-size: 13px; color: #64748b; margin-top: 6px;">ডাটা এডিট করতে সিক্রেট পাসওয়ার্ডটি দিন:</p>
+            
+            <div class="password-wrapper clay-inset" style="margin-top: 12px;">
+                <input type="password" id="adminPassword" placeholder="পাসওয়ার্ড লিখুন..." class="modal-input-raw">
+                <span class="eye-btn" onclick="togglePasswordVisibility('adminPassword', 'eyeIconSvg')">
+                    <svg id="eyeIconSvg" class="svg-icon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                </span>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between;">
+                <button class="btn clay-btn" onclick="closeAdminModal()">বাতিল</button>
+                <button class="btn clay-btn" onclick="showChangePassView(true)" style="font-size: 12px; padding: 8px 10px;">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v2h2v-2h2v-2H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+                    পাসওয়ার্ড চেঞ্জ
+                </button>
+                <button class="btn clay-btn clay-btn-primary" onclick="verifyAdmin()">আনলক করুন</button>
+            </div>
+        </div>
+
+        <!-- Change Password View -->
+        <div id="adminChangePassView" style="display: none; text-align: left; margin-top: 10px;">
+            <p style="font-size: 13px; color: #64748b; text-align: center; margin-bottom: 12px;">পাসওয়ার্ড পরিবর্তনের জন্য বর্তমান ও নতুন পাসওয়ার্ড লিখুন:</p>
+            
+            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">বর্তমান পাসওয়ার্ড:</label>
+            <div class="password-wrapper clay-inset" style="margin-bottom: 10px;">
+                <input type="password" id="currAdminPass" placeholder="বর্তমান পাসওয়ার্ড..." class="modal-input-raw">
+                <span class="eye-btn" onclick="togglePasswordVisibility('currAdminPass', 'currEyeIconSvg')">
+                    <svg id="currEyeIconSvg" class="svg-icon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                </span>
+            </div>
+
+            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">নতুন পাসওয়ার্ড:</label>
+            <div class="password-wrapper clay-inset" style="margin-bottom: 16px;">
+                <input type="password" id="newAdminPass" placeholder="নতুন পাসওয়ার্ড..." class="modal-input-raw">
+                <span class="eye-btn" onclick="togglePasswordVisibility('newAdminPass', 'newEyeIconSvg')">
+                    <svg id="newEyeIconSvg" class="svg-icon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                </span>
+            </div>
+
+            <div class="modal-actions" style="display: flex; justify-content: space-between; gap: 8px;">
+                <button class="btn clay-btn" onclick="showChangePassView(false)">বাতিল</button>
+                <button class="btn clay-btn clay-btn-primary" onclick="submitPasswordChange()">সাবমিট করুন</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deposit Entry Modal -->
+<div id="depositModal" class="modal">
+    <div class="modal-content clay-card" style="max-width: 440px; text-align: left;">
+        <div class="admin-modal-header">
+            <div class="admin-modal-title">
+                <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                <h3>মেম্বার ডিপোজিট এন্ট্রি</h3>
+            </div>
+            <button class="modal-close-btn" onclick="closeDepositModal()" title="বন্ধ করুন">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+        <div style="padding: 4px 0 12px 0;">
+            <div class="input-group">
+                <label>সদস্য নির্বাচন করুন:</label>
+                <select id="txnMemberSelect" class="drawer-input"></select>
+            </div>
+            <div class="input-group" style="margin-top: 12px;">
+                <label>জমার পরিমাণ (BDT):</label>
+                <input type="number" id="txnAmountInput" class="drawer-input" placeholder="যেমন: 1000">
+            </div>
+            <div class="input-group" style="margin-top: 12px;">
+                <label>নোট / বিবরণ:</label>
+                <input type="text" id="txnNoteInput" class="drawer-input" placeholder="যেমন: ক্যাশ জমা / বিকাশ">
+            </div>
+        </div>
+        <div class="modal-actions" style="justify-content: flex-end; gap: 10px;">
+            <button class="btn clay-btn" onclick="closeDepositModal()">বাতিল</button>
+            <button class="btn clay-btn clay-btn-primary" onclick="submitDepositTransaction()">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                জমা সেভ করুন
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Notice Board Modal -->
+<div id="noticeModal" class="modal">
+    <div class="modal-content clay-card" style="max-width: 520px; text-align: left;">
+        <div class="admin-modal-header">
+            <div class="admin-modal-title">
+                <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z"/></svg>
+                <h3>নোটিশ বোর্ড কন্ট্রোল</h3>
+            </div>
+            <button class="modal-close-btn" onclick="closeNoticeModal()" title="বন্ধ করুন">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+        <div style="padding: 4px 0 12px 0;">
+            <div class="input-group">
+                <label>নতুন নোটিশ লিখুন:</label>
+                <textarea id="newNoticeText" class="drawer-input" rows="3" placeholder="নোটিশের তথ্য লিখুন..." style="resize: vertical;"></textarea>
+            </div>
+            <div class="input-group" style="margin-top: 12px;">
+                <label>নোটিশ টাইপ:</label>
+                <select id="newNoticeType" class="drawer-input">
+                    <option value="notice-urgent">🚨 জরুরি (লাল)</option>
+                    <option value="notice-advance">🌱 অগ্রিম/পেমেন্ট (সবুজ)</option>
+                    <option value="notice-info">💡 সাধারণ/তথ্য (হলুদ)</option>
+                    <option value="notice-meeting">👥 মিটিং/সভা (বেগুনি)</option>
+                    <option value="notice-bazar">🛒 বাজার/মিল (সায়ান)</option>
+                    <option value="notice-other">📌 অন্যান্য (ধূসর)</option>
+                </select>
+            </div>
+            <button class="btn clay-btn clay-btn-primary full-width-btn" style="margin-top: 14px;" onclick="addNewNotice()">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                নোটিশ যোগ করুন
+            </button>
+            <div id="noticeModalList" style="margin-top: 16px; max-height: 260px; overflow-y: auto;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================= -->
+<!-- MAIN DASHBOARD VIEW                     -->
+<!-- ======================================= -->
 <div id="mainDashboard" class="container">
     <!-- Navbar -->
     <nav class="navbar clay-card">
@@ -64,6 +196,33 @@
                 <div class="brand-subtitle">মেস হিসাব ড্যাশবোর্ড • ইন্টারঅ্যাক্টিভ ট্রানজেকশন সিস্টেম</div>
             </div>
         </div>
+
+        <!-- Month Switcher -->
+        <div class="month-switcher" id="monthSwitcher">
+            <button class="month-nav-btn clay-btn" onclick="prevMonth()" title="আগের মাস" id="monthPrevBtn">
+                <svg class="svg-icon" viewBox="0 0 24 24">
+                    <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z" />
+                </svg>
+            </button>
+            <div class="month-display-wrapper" id="monthDisplayWrapper">
+                <button class="month-display-btn clay-btn" onclick="toggleMonthDropdown('monthDropdown', 'monthDisplayWrapper')" id="monthDisplayBtn">
+                    <svg class="svg-icon" viewBox="0 0 24 24" style="fill:#2563eb;">
+                        <path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z" />
+                    </svg>
+                    <span id="activeMonthLabel">লোড হচ্ছে...</span>
+                    <svg class="svg-icon month-chevron" viewBox="0 0 24 24">
+                        <path d="M7 10l5 5 5-5z" />
+                    </svg>
+                </button>
+                <div id="monthDropdown" class="month-dropdown" style="display:none;"></div>
+            </div>
+            <button class="month-nav-btn clay-btn" onclick="nextMonth()" title="পরের মাস" id="monthNextBtn">
+                <svg class="svg-icon" viewBox="0 0 24 24">
+                    <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+                </svg>
+            </button>
+        </div>
+
         <div class="nav-buttons">
             <button class="btn clay-btn" onclick="showTxnPage()">
                 <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
@@ -107,7 +266,6 @@
                 <svg class="svg-icon" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                 সদস্যভিত্তিক বিস্তারিত হিসাব সামারি
             </span>
-        
         </div>
         <div style="margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
             <div style="font-size: 13px; color: #475569; font-weight: 600;">সদস্য কলাম ফোকাস / হাইলাইট:</div>
@@ -134,7 +292,7 @@
     </div>
 
     <!-- Dynamic Notice Board Section -->
-    <div class="clay-card">
+    <div id="noticeBoardSection" class="clay-card notice-board-card">
         <div class="card-title title-with-icon">
             <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
             মেস নোটিশ বোর্ড & বিশেষ নির্দেশাবলী
@@ -143,7 +301,9 @@
     </div>
 </div>
 
-<!-- FULL-PAGE TRANSACTION LOG VIEW -->
+<!-- ======================================= -->
+<!-- FULL-PAGE TRANSACTION LOG VIEW          -->
+<!-- ======================================= -->
 <div id="txnPage" class="container" style="display: none;">
     <div class="clay-card">
         <div class="txn-page-header">
@@ -152,7 +312,6 @@
                 <p style="font-size: 13px; color: #64748b;">মেসের যাবতীয় জমা ও খরচের বিস্তারিত তথ্যপত্র</p>
             </div>
             <div class="nav-buttons">
-                <!-- Admin Access Button inside Txn Log (Always visible or toggling state) -->
                 <button id="txnAdminNavBtn" class="btn clay-btn clay-btn-primary" onclick="handleAdminToggle()">
                     <svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
                     <span id="txnAdminNavBtnText">এডমিন কন্ট্রোল</span>
@@ -160,6 +319,34 @@
                 <button class="btn clay-btn" onclick="hideTxnPage()">
                     <svg class="svg-icon" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
                     ড্যাশবোর্ডে ফিরুন
+                </button>
+            </div>
+        </div>
+
+        <!-- Month Switcher Bar in Txn Page -->
+        <div class="admin-month-bar" id="txnMonthBar">
+            <div class="month-switcher" id="txnMonthSwitcher">
+                <button class="month-nav-btn clay-btn" onclick="prevMonth()" title="আগের মাস" id="txnMonthPrevBtn">
+                    <svg class="svg-icon" viewBox="0 0 24 24">
+                        <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z" />
+                    </svg>
+                </button>
+                <div class="month-display-wrapper" id="txnMonthDisplayWrapper">
+                    <button class="month-display-btn clay-btn" onclick="toggleMonthDropdown('txnMonthDropdown', 'txnMonthDisplayWrapper')" id="txnMonthDisplayBtn">
+                        <svg class="svg-icon" viewBox="0 0 24 24" style="fill:#2563eb;">
+                            <path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z" />
+                        </svg>
+                        <span id="txnActiveMonthLabel">লোড হচ্ছে...</span>
+                        <svg class="svg-icon month-chevron" viewBox="0 0 24 24">
+                            <path d="M7 10l5 5 5-5z" />
+                        </svg>
+                    </button>
+                    <div id="txnMonthDropdown" class="month-dropdown" style="display:none;"></div>
+                </div>
+                <button class="month-nav-btn clay-btn" onclick="nextMonth()" title="পরের মাস" id="txnMonthNextBtn">
+                    <svg class="svg-icon" viewBox="0 0 24 24">
+                        <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+                    </svg>
                 </button>
             </div>
         </div>
@@ -222,241 +409,214 @@
     </div>
 </div>
 
-<!-- Admin Password Modal -->
-<div id="adminModal" class="modal">
-    <div class="modal-content clay-card" style="max-width: 380px;">
-        <div class="confirm-icon-box">
-            <svg class="svg-icon svg-icon-large primary-color" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
-        </div>
-        <h3 id="adminModalTitle">এডমিন সিকিউরিটি এক্সেস</h3>
-        
-        <!-- Standard Unlock View -->
-        <div id="adminUnlockView">
-            <p style="font-size: 13px; color: #64748b; margin-top: 6px;">ডাটা এডিট করতে সিক্রেট পাসওয়ার্ডটি দিন:</p>
-            
-            <div class="password-wrapper clay-inset" style="margin-top: 12px;">
-                <input type="password" id="adminPassword" placeholder="পাসওয়ার্ড লিখুন..." class="modal-input-raw">
-                <span class="eye-btn" onclick="togglePasswordVisibility('adminPassword', 'eyeIconSvg')">
-                    <svg id="eyeIconSvg" class="svg-icon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                </span>
-            </div>
+<!-- ======================================= -->
+<!-- ADMIN FULL-PAGE VIEW                    -->
+<!-- ======================================= -->
+<div id="adminPage" class="container" style="display: none;">
 
-            <div class="modal-actions" style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between;">
-                <button class="btn clay-btn" onclick="closeAdminModal()">বাতিল</button>
-                <button class="btn clay-btn" onclick="showChangePassView(true)" style="font-size: 12px; padding: 8px 10px;">
-                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v2h2v-2h2v-2H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
-                    পাসওয়ার্ড চেঞ্জ
-                </button>
-                <button class="btn clay-btn clay-btn-primary" onclick="verifyAdmin()">আনলক করুন</button>
+    <!-- Admin Navbar -->
+    <nav class="navbar clay-card">
+        <div class="brand-container">
+            <div class="logo-box clay-btn-icon" style="background: linear-gradient(145deg, #7c3aed, #6d28d9);">
+                <svg viewBox="0 0 24 24" class="svg-icon" style="width:24px; height:24px; fill:#ffffff;">
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
+                </svg>
+            </div>
+            <div>
+                <div class="brand-title" style="color: #7c3aed;">এডমিন প্যানেল</div>
+                <div class="brand-subtitle">ISOTOPE মেস • ডাটা ম্যানেজমেন্ট কন্ট্রোল</div>
             </div>
         </div>
-
-        <!-- Change Password View -->
-        <div id="adminChangePassView" style="display: none; text-align: left; margin-top: 10px;">
-            <p style="font-size: 13px; color: #64748b; text-align: center; margin-bottom: 12px;">পাসওয়ার্ড পরিবর্তনের জন্য বর্তমান ও নতুন পাসওয়ার্ড লিখুন:</p>
-            
-            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">বর্তমান পাসওয়ার্ড:</label>
-            <div class="password-wrapper clay-inset" style="margin-bottom: 10px;">
-                <input type="password" id="currAdminPass" placeholder="বর্তমান পাসওয়ার্ড..." class="modal-input-raw">
-                <span class="eye-btn" onclick="togglePasswordVisibility('currAdminPass', 'currEyeIconSvg')">
-                    <svg id="currEyeIconSvg" class="svg-icon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                </span>
-            </div>
-
-            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">নতুন পাসওয়ার্ড:</label>
-            <div class="password-wrapper clay-inset" style="margin-bottom: 16px;">
-                <input type="password" id="newAdminPass" placeholder="নতুন পাসওয়ার্ড..." class="modal-input-raw">
-                <span class="eye-btn" onclick="togglePasswordVisibility('newAdminPass', 'newEyeIconSvg')">
-                    <svg id="newEyeIconSvg" class="svg-icon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                </span>
-            </div>
-
-            <div class="modal-actions" style="display: flex; justify-content: space-between; gap: 8px;">
-                <button class="btn clay-btn" onclick="showChangePassView(false)">বাতিল</button>
-                <button class="btn clay-btn clay-btn-primary" onclick="submitPasswordChange()">সাবমিট করুন</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Slide-Over Admin Drawer -->
-<div id="adminDrawer" class="admin-drawer">
-    <div class="drawer-header">
-        <div class="drawer-header-left">
-            <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
-            <h2>এডমিন কন্ট্রোল প্যানেল</h2>
-        </div>
-        <div class="drawer-header-right">
-            <!-- Turn Off Admin Button Beside Title -->
-            <button class="btn clay-btn clay-btn-danger" style="padding: 6px 10px; font-size: 12px;" onclick="turnOffAdmin()">
-                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+        <div class="nav-buttons">
+            <button class="btn clay-btn clay-btn-danger" onclick="turnOffAdmin()">
+                <svg class="svg-icon" viewBox="0 0 24 24">
+                    <path d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z" />
+                </svg>
                 মোড অফ
             </button>
-            <button class="close-drawer-btn" onclick="toggleAdminDrawer(false)">✕</button>
+            <button class="btn clay-btn" onclick="hideAdminPage()">
+                <svg class="svg-icon" viewBox="0 0 24 24">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+                </svg>
+                ড্যাশবোর্ডে ফিরুন
+            </button>
+        </div>
+    </nav>
+
+    <!-- Admin Month Switcher Bar -->
+    <div class="admin-month-bar" id="adminMonthBar">
+        <div class="month-switcher" id="adminMonthSwitcher">
+            <button class="month-nav-btn clay-btn" onclick="prevMonth()" title="আগের মাস" id="adminMonthPrevBtn">
+                <svg class="svg-icon" viewBox="0 0 24 24">
+                    <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z" />
+                </svg>
+            </button>
+            <div class="month-display-wrapper" id="adminMonthDisplayWrapper">
+                <button class="month-display-btn clay-btn" onclick="toggleMonthDropdown('adminMonthDropdown', 'adminMonthDisplayWrapper')" id="adminMonthDisplayBtn">
+                    <svg class="svg-icon" viewBox="0 0 24 24" style="fill:#7c3aed;">
+                        <path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z" />
+                    </svg>
+                    <span id="adminActiveMonthLabel">লোড হচ্ছে...</span>
+                    <svg class="svg-icon month-chevron" viewBox="0 0 24 24">
+                        <path d="M7 10l5 5 5-5z" />
+                    </svg>
+                </button>
+                <div id="adminMonthDropdown" class="month-dropdown" style="display:none;"></div>
+            </div>
+            <button class="month-nav-btn clay-btn" onclick="nextMonth()" title="পরের মাস" id="adminMonthNextBtn">
+                <svg class="svg-icon" viewBox="0 0 24 24">
+                    <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+                </svg>
+            </button>
         </div>
     </div>
-    
-    <div class="drawer-body">
-        
-        <!-- Section: Add Money / Deposit Entry -->
-        <div class="admin-tab-section">
-            <h3>
-                <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
-                মেম্বার ডিপোজিট এন্ট্রি (টাকা জমা নেওয়া)
-            </h3>
-            <div class="clay-inset notice-admin-box">
-                <div class="input-group">
-                    <label>সদস্য নির্বাচন করুন:</label>
-                    <select id="txnMemberSelect" class="drawer-input"></select>
+
+    <!-- Admin Page Grid (3 Columns on Desktop) -->
+    <div class="admin-page-grid">
+
+        <!-- Column 1: Left (Deposit Entry + Notice Board) -->
+        <div class="admin-grid-col admin-col-left">
+            <!-- Card 1: Deposit Entry -->
+            <div class="clay-card admin-page-card admin-action-card">
+                <div class="card-title">
+                    <span class="title-with-icon">
+                        <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                        মেম্বার ডিপোজিট এন্ট্রি
+                    </span>
                 </div>
-                <div class="input-group" style="margin-top: 8px;">
-                    <label>জমার পরিমাণ (BDT):</label>
-                    <input type="number" id="txnAmountInput" class="drawer-input" placeholder="যেমন: 1000">
+                <div class="admin-action-body">
+                    <button class="admin-action-btn" onclick="openDepositModal()">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        <span>নতুন ডিপোজিট এন্ট্রি</span>
+                    </button>
                 </div>
-                <div class="input-group" style="margin-top: 8px;">
-                    <label>নোট / বিবরণ:</label>
-                    <input type="text" id="txnNoteInput" class="drawer-input" placeholder="যেমন: ক্যাশ জমা / বিকাশ">
+            </div>
+
+            <!-- Card 2: Notice Board Manager -->
+            <div class="clay-card admin-page-card admin-action-card" style="margin-top: 16px;">
+                <div class="card-title">
+                    <span class="title-with-icon">
+                        <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z"/></svg>
+                        নোটিশ বোর্ড কন্ট্রোল
+                    </span>
                 </div>
-                <button class="btn clay-btn clay-btn-primary full-width-btn" style="margin-top: 10px;" onclick="submitDepositTransaction()">
-                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                    জমা সেভ করুন
+                <div class="admin-action-body">
+                    <button class="admin-action-btn admin-action-btn--notice" onclick="openNoticeModal()">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        <span>নতুন নোটিশ যোগ করুন</span>
+                    </button>
+                    <div id="adminNoticeList" style="margin-top: 12px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 2: Center (Utility & Fixed Costs) -->
+        <div class="admin-grid-col admin-col-mid">
+            <div class="clay-card admin-page-card">
+                <div class="card-title">
+                    <span class="title-with-icon">
+                        <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                        ইউটিলিটি ও ফিক্সড খরচ
+                    </span>
+                </div>
+                <div id="drawerFixedCostsInputs" class="drawer-inputs-grid"></div>
+                <button class="btn clay-btn clay-btn-primary full-width-btn" onclick="saveFixedCosts()">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+                    ইউটিলিটি খরচ সেভ করুন
                 </button>
             </div>
         </div>
 
-        <hr class="drawer-divider">
-
-        <!-- Section 1: Fixed Costs -->
-        <div class="admin-tab-section">
-            <h3>
-                <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-                ইউটিলিটি ও ফিক্সড খরচ
-            </h3>
-            <div id="drawerFixedCostsInputs" class="drawer-inputs-grid"></div>
-            <button class="btn clay-btn clay-btn-primary full-width-btn" onclick="saveFixedCosts()">
-                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-                ইউটিলিটি খরচ সেভ করুন
-            </button>
-        </div>
-
-        <hr class="drawer-divider">
-
-        <!-- Section 2: Member Entries -->
-        <div class="admin-tab-section">
-            <h3>
-                <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                সদস্যভিত্তিক মিল ও এডজাস্টমেন্ট
-            </h3>
-            <div class="input-group" style="margin-bottom: 8px;">
-                <label>অন্যান্য এডজাস্টমেন্টের নাম:</label>
-                <input type="text" id="customAdjLabelInput" class="drawer-input" value="ফ্রিজ সমন্বয়">
-            </div>
-            <button class="btn clay-btn clay-btn-primary full-width-btn" style="margin-bottom: 12px;" onclick="saveCustomAdjLabel()">
-                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-                এডজাস্টমেন্ট নাম সেভ করুন
-            </button>
-            <div id="drawerMemberInputs" class="drawer-member-list"></div>
-        </div>
-
-        <hr class="drawer-divider">
-
-        <!-- Section 3: Notice Board Manager -->
-        <div class="admin-tab-section">
-            <h3>
-                <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z"/></svg>
-                নোটিশ বোর্ড কন্ট্রোল
-            </h3>
-            <div class="clay-inset notice-admin-box">
-                <div class="input-group">
-                    <label>নতুন নোটিশ লিখুন:</label>
-                    <textarea id="newNoticeText" class="drawer-input" rows="2" placeholder="নোটিশের তথ্য লিখুন..."></textarea>
+        <!-- Column 3: Right (Member Meals & Adjustment) -->
+        <div class="admin-grid-col admin-col-right">
+            <div class="clay-card admin-page-card">
+                <div class="card-title">
+                    <span class="title-with-icon">
+                        <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        সদস্যভিত্তিক মিল ও এডজাস্টমেন্ট
+                    </span>
                 </div>
-                <div class="input-group" style="margin-top: 8px;">
-                    <label>নোটিশ টাইপ:</label>
-                    <select id="newNoticeType" class="drawer-input">
-                        <option value="notice-urgent">🚨 জরুরি (লাল)</option>
-                        <option value="notice-advance">🌱 অগ্রিম/পেমেন্ট (সবুজ)</option>
-                        <option value="notice-info">💡 সাধারণ/তথ্য (হলুদ)</option>
-                        <option value="notice-meeting">👥 মিটিং/সভা (বেগুনি)</option>
-                        <option value="notice-bazar">🛒 বাজার/মিল (সায়ান)</option>
-                        <option value="notice-other">📌 অন্যান্য (ধূসর)</option>
-                    </select>
+                <!-- Member Selector Bar -->
+                <div class="member-selector-bar">
+                    <div class="member-selector-dropdown-wrap">
+                        <span class="member-selector-icon">👤</span>
+                        <select id="adminMemberSelect" class="drawer-input member-selector-dropdown" onchange="renderMemberEditForm()">
+                            <option value="">-- সদস্য নির্বাচন করুন --</option>
+                        </select>
+                    </div>
+                    <div id="memberSelectorBadge" class="member-badge"></div>
                 </div>
-                <button class="btn clay-btn clay-btn-primary full-width-btn" style="margin-top: 10px;" onclick="addNewNotice()">
-                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                    নোটিশ যোগ করুন
-                </button>
+                <!-- Single Member Edit Panel -->
+                <div id="memberEditFormContainer" class="member-edit-panel-container"></div>
             </div>
-            <div id="adminNoticeList" style="margin-top: 15px;"></div>
         </div>
 
     </div>
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-analytics.js";
-  import { getFirestore } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+    // ============================================================
+    // LOCAL DEV / PRODUCTION SWITCH
+    // ------------------------------------------------------------
+    // In local development, Firebase is intentionally NOT initialized:
+    // the app saves only to localStorage. NO request reaches live Firestore.
+    // In production (Vercel), Firebase connects as normal and reads/writes
+    // the real user-facing Firestore collections.
+    // ============================================================
+    const IS_DEV_MODE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    window.IS_DEV_MODE = IS_DEV_MODE;
 
-  // ============================================================
-  // LOCAL DEV / PRODUCTION SWITCH
-  // ------------------------------------------------------------
-  // In local development, Firebase is intentionally NOT initialized:
-  // the app loads from the local mock database (src/data/mockDatabase.json)
-  // and saves only to localStorage. NO request ever reaches live Firestore.
-  // In production (Vercel), Firebase connects as normal and reads/writes
-  // the real user-facing Firestore collections.
-  // ============================================================
-  const IS_DEV_MODE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  window.IS_DEV_MODE = IS_DEV_MODE;
+    if (!IS_DEV_MODE) {
+        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js");
+        const { getAnalytics } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-analytics.js");
+        const { getFirestore } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js");
 
-  // Loader for the local mock database used ONLY in development.
-  // Returns a plain-JS object shaped exactly like Firestore exports:
-  //   { settings: { config: {...} }, members: {...}, notices: [...], transactions: [...] }
-  window.loadMockDatabase = async function() {
-    const res = await fetch('src/data/mockDatabase.json');
-    if (!res.ok) throw new Error('Mock database file not found at src/data/mockDatabase.json');
-    return res.json();
-  };
+        const firebaseConfig = {
+            apiKey: "AIzaSyAckBpcMbXPoWnOQmvtXY10ofknwRJTz2A",
+            authDomain: "isotope-beta.firebaseapp.com",
+            projectId: "isotope-beta",
+            storageBucket: "isotope-beta.firebasestorage.app",
+            messagingSenderId: "419427665548",
+            appId: "1:419427665548:web:624b67b1db48698c121da9",
+            measurementId: "G-TS9R91ZKK1"
+        };
 
-  if (!IS_DEV_MODE) {
-    const firebaseConfig = {
-      apiKey: "AIzaSyAckBpcMbXPoWnOQmvtXY10ofknwRJTz2A",
-      authDomain: "isotope-beta.firebaseapp.com",
-      projectId: "isotope-beta",
-      storageBucket: "isotope-beta.firebasestorage.app",
-      messagingSenderId: "419427665548",
-      appId: "1:419427665548:web:624b67b1db48698c121da9",
-      measurementId: "G-TS9R91ZKK1"
-    };
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app);
 
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const db = getFirestore(app);
-
-    window.firebaseApp = app;
-    window.firebaseDb = db;
-    window.dispatchEvent(new CustomEvent('firebase-ready'));
-  }
+        window.firebaseApp = app;
+        window.firebaseDb = db;
+        window.dispatchEvent(new CustomEvent('firebase-ready'));
+    }
 </script>
 
 <script src="app.js"></script>
 
 <!-- PWA Service Worker Registration -->
 <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
-        .then((registration) => {
-          console.log('[PWA] Service Worker registered:', registration.scope);
-          // Check for updates every time page loads
-          registration.update();
-        })
-        .catch((err) => {
-          console.warn('[PWA] Service Worker registration failed:', err);
-        });
-    });
-  }
+    if ('serviceWorker' in navigator) {
+        if (window.IS_DEV_MODE) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.getRegistrations().then((registrations) => {
+                    registrations.forEach((registration) => registration.unregister());
+                });
+                if (window.caches) {
+                    caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)));
+                }
+            });
+        } else {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        registration.update();
+                    })
+                    .catch((err) => {
+                        console.warn('[PWA] Service Worker registration failed:', err);
+                    });
+            });
+        }
+    }
 </script>
 
 </body>
