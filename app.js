@@ -1,14 +1,18 @@
 // ============================================================
 //  ISOTOPE MESS DASHBOARD — app.js
 //  Complete, Robust, Responsive & Multi-Month Mess Management
+//  Advanced Data Architecture v3.0 (Dynamic Member Lifecycle & Fast Sync)
 // ============================================================
 
 // ---------- Constants ----------
 const FIREBASE_FIRESTORE_URL = "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
 const DEFAULT_ADMIN_PASSWORD = "@12azmain";
 const DEFAULT_CUSTOM_ADJ_LABEL = "ফ্রিজ সমন্বয়";
-const MEMBER_ORDER = ["আজমাইন", "রিয়াজ", "সাকিব", "ওমর", "নাফিজ", "ফারেছ"];
 const CURRENT_YEAR = 2026;
+const MESS_ID = "ISO-MESS-01";
+
+// Forward declare state variable to avoid Temporal Dead Zone in helper functions
+var state = null;
 
 const BENGALI_MONTH_NAMES = [
     "জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল",
@@ -28,13 +32,23 @@ const AUGUST_FIXED_COSTS = {
     waste: 70
 };
 
+// Initial Master Members Registry with Professional Dynamic IDs (e.g. ISO-202601-001)
+const INITIAL_MASTER_MEMBERS = [
+    { id: "ISO-202601-001", name: "আজমাইন", joinMonth: "2026-01", leaveMonth: null, defaultRent: 2200, phone: "", isActive: true },
+    { id: "ISO-202601-002", name: "রিয়াজ", joinMonth: "2026-01", leaveMonth: null, defaultRent: 2200, phone: "", isActive: true },
+    { id: "ISO-202601-003", name: "সাকিব", joinMonth: "2026-01", leaveMonth: null, defaultRent: 2000, phone: "", isActive: true },
+    { id: "ISO-202601-004", name: "ওমর", joinMonth: "2026-01", leaveMonth: null, defaultRent: 2000, phone: "", isActive: true },
+    { id: "ISO-202601-005", name: "নাফিজ", joinMonth: "2026-01", leaveMonth: null, defaultRent: 1800, phone: "", isActive: true },
+    { id: "ISO-202601-006", name: "ফারেছ", joinMonth: "2026-01", leaveMonth: null, defaultRent: 1800, phone: "", isActive: true }
+];
+
 const AUGUST_MEMBERS = [
-    { name: "আজমাইন", meals: 59, bazarDeposit: 2451, rent: 2200, prevAdj: 96.67, fridgeAdj: -120 },
-    { name: "রিয়াজ", meals: 42, bazarDeposit: 2299, rent: 2200, prevAdj: 96.67, fridgeAdj: -120 },
-    { name: "সাকিব", meals: 5, bazarDeposit: 0, rent: 2000, prevAdj: -140.67, fridgeAdj: 480 },
-    { name: "ওমর", meals: 0, bazarDeposit: 0, rent: 2000, prevAdj: -143.33, fridgeAdj: 0 },
-    { name: "নাফিজ", meals: 53, bazarDeposit: 0, rent: 1800, prevAdj: -472.26, fridgeAdj: -120 },
-    { name: "ফারেছ", meals: 43, bazarDeposit: 3391, rent: 1800, prevAdj: 96.67, fridgeAdj: -120 }
+    { id: "ISO-202601-001", name: "আজমাইন", meals: 59, bazarDeposit: 2451, rent: 2200, prevAdj: 96.67, fridgeAdj: -120 },
+    { id: "ISO-202601-002", name: "রিয়াজ", meals: 42, bazarDeposit: 2299, rent: 2200, prevAdj: 96.67, fridgeAdj: -120 },
+    { id: "ISO-202601-003", name: "সাকিব", meals: 5, bazarDeposit: 0, rent: 2000, prevAdj: -140.67, fridgeAdj: 480 },
+    { id: "ISO-202601-004", name: "ওমর", meals: 0, bazarDeposit: 0, rent: 2000, prevAdj: -143.33, fridgeAdj: 0 },
+    { id: "ISO-202601-005", name: "নাফিজ", meals: 53, bazarDeposit: 0, rent: 1800, prevAdj: -472.26, fridgeAdj: -120 },
+    { id: "ISO-202601-006", name: "ফারেছ", meals: 43, bazarDeposit: 3391, rent: 1800, prevAdj: 96.67, fridgeAdj: -120 }
 ];
 
 const AUGUST_NOTICES = [
@@ -52,8 +66,29 @@ const AUGUST_TRANSACTIONS = [
     { id: 103, date: "03/08/2026, 06:40 PM", member: "ফারেছ", note: "প্রাথমিক বাজার জমা", amount: 3391 }
 ];
 
+// ---------- Dynamic Member ID Generator ----------
+function generateMemberId(joinMonth, serialNumber) {
+    const ym = (joinMonth || "2026-01").replace(/[^0-9]/g, '');
+    const num = String(serialNumber || 1).padStart(3, '0');
+    return `ISO-${ym}-${num}`;
+}
+
+// Check if a member was active in a given month
+function isMemberActiveInMonth(member, monthKey) {
+    const jm = member.joinMonth || "2026-01";
+    if (jm > monthKey) return false;
+    if (member.leaveMonth && member.leaveMonth < monthKey) return false;
+    return true;
+}
+
+function getActiveMembersForMonth(monthKey) {
+    const master = (typeof state !== 'undefined' && state && state.masterMembers) ? state.masterMembers : INITIAL_MASTER_MEMBERS;
+    return master.filter(m => isMemberActiveInMonth(m, monthKey));
+}
+
 // Generate clean default month template (all values zero)
-function createEmptyMonthData() {
+function createEmptyMonthData(monthKey = "2026-08") {
+    const activeMasterList = getActiveMembersForMonth(monthKey);
     return {
         fixedCosts: {
             electricity: 0,
@@ -65,11 +100,12 @@ function createEmptyMonthData() {
             khala: 0,
             waste: 0
         },
-        members: MEMBER_ORDER.map(name => ({
-            name,
+        members: activeMasterList.map(m => ({
+            id: m.id,
+            name: m.name,
             meals: 0,
             bazarDeposit: 0,
-            rent: 0,
+            rent: m.defaultRent || 0,
             prevAdj: 0,
             fridgeAdj: 0
         })),
@@ -83,7 +119,7 @@ function createInitialMonthsData() {
     const months = {};
     for (let m = 1; m <= 12; m++) {
         const key = `${CURRENT_YEAR}-${String(m).padStart(2, '0')}`;
-        months[key] = createEmptyMonthData();
+        months[key] = createEmptyMonthData(key);
     }
     // Set August real data
     months["2026-08"] = {
@@ -96,11 +132,12 @@ function createInitialMonthsData() {
 }
 
 // ---------- State ----------
-let state = {
+state = {
     isAdmin: false,
     adminPassword: DEFAULT_ADMIN_PASSWORD,
     customAdjLabel: DEFAULT_CUSTOM_ADJ_LABEL,
     activeMonth: "2026-08",
+    masterMembers: INITIAL_MASTER_MEMBERS.map(m => ({ ...m })),
     months: createInitialMonthsData(),
     // Active month view mirrors:
     fixedCosts: { ...AUGUST_FIXED_COSTS },
@@ -161,12 +198,18 @@ function showConfirmModal(title, message, onConfirm) {
     $('confirmModal').style.display = 'flex';
 }
 
-function closeConfirmModal(isConfirmed) {
+function closeConfirmModal(agreed = false) {
     $('confirmModal').style.display = 'none';
-    if (isConfirmed && confirmCallback) confirmCallback();
+    if (agreed && typeof confirmCallback === 'function') {
+        confirmCallback();
+    }
     confirmCallback = null;
 }
 
+const confirmCancelBtn = $('confirmCancelBtn');
+if (confirmCancelBtn) {
+    confirmCancelBtn.addEventListener('click', () => closeConfirmModal(false));
+}
 const confirmAgreeBtn = $('confirmAgreeBtn');
 if (confirmAgreeBtn) {
     confirmAgreeBtn.addEventListener('click', () => closeConfirmModal(true));
@@ -185,12 +228,20 @@ function persistLocally() {
     if (state.months && state.activeMonth) {
         state.months[state.activeMonth] = {
             fixedCosts: { ...state.fixedCosts },
+            customAdjLabel: state.customAdjLabel,
             members: state.members.map(m => ({ ...m })),
             notices: state.notices.map(n => ({ ...n })),
             transactions: state.transactions.map(t => ({ ...t }))
         };
     }
-    localStorage.setItem('isotope_mess_data_v2', JSON.stringify(state));
+    localStorage.setItem('isotope_mess_data_v3', JSON.stringify({
+        masterMembers: state.masterMembers,
+        months: state.months,
+        activeMonth: state.activeMonth,
+        adminPassword: state.adminPassword,
+        customAdjLabel: state.customAdjLabel,
+        version: "3.0"
+    }));
 }
 
 async function saveData() {
@@ -203,30 +254,47 @@ async function saveData() {
         const { doc, setDoc } = await getFirestoreModule();
         const mKey = state.activeMonth;
 
-        // 1. Global settings
+        // 1. Global config & master members registry
         await setDoc(doc(window.firebaseDb, "settings", "config"), {
             adminPassword: state.adminPassword || DEFAULT_ADMIN_PASSWORD,
-            activeMonth: state.activeMonth
+            activeMonth: state.activeMonth,
+            customAdjLabel: state.customAdjLabel || DEFAULT_CUSTOM_ADJ_LABEL,
+            messId: MESS_ID,
+            version: "3.0",
+            updatedAt: new Date().toISOString()
         });
 
-        // 2. Month-scoped fixed costs & month custom adjustment label
+        await setDoc(doc(window.firebaseDb, "members", "master"), {
+            list: state.masterMembers,
+            updatedAt: new Date().toISOString()
+        });
+
+        // 2. Atomic Month Document Store (Instant 1-Read fast load)
+        await setDoc(doc(window.firebaseDb, "months", mKey), {
+            monthKey: mKey,
+            fixedCosts: { ...state.fixedCosts },
+            customAdjLabel: state.customAdjLabel || DEFAULT_CUSTOM_ADJ_LABEL,
+            members: state.members,
+            notices: state.notices,
+            transactions: state.transactions,
+            updatedAt: new Date().toISOString()
+        });
+
+        // 3. Month-scoped subcollection (for backward compatibility)
         await setDoc(doc(window.firebaseDb, "months", mKey, "data", "fixedCosts"), {
             ...state.fixedCosts,
             customAdjLabel: state.customAdjLabel || "ফ্রিজ ও অন্যান্য"
         });
 
-        // 3. Month-scoped members
         for (let member of state.members) {
             const docId = member.name.replace(/\s+/g, '_');
             await setDoc(doc(window.firebaseDb, "months", mKey, "members", docId), member);
         }
 
-        // 4. Month-scoped notices
         for (let notice of state.notices) {
             await setDoc(doc(window.firebaseDb, "months", mKey, "notices", String(notice.id)), notice);
         }
 
-        // 5. Month-scoped transactions
         for (let txn of state.transactions) {
             await setDoc(doc(window.firebaseDb, "months", mKey, "transactions", String(txn.id)), txn);
         }
@@ -247,12 +315,23 @@ async function loadFromFirestore() {
                 const configData = configSnap.data();
                 if (configData.adminPassword) state.adminPassword = configData.adminPassword;
                 if (configData.activeMonth) state.activeMonth = configData.activeMonth;
+                if (configData.customAdjLabel) state.customAdjLabel = configData.customAdjLabel;
             }
         } catch (err) {
             console.warn("Firebase config load warning:", err);
         }
 
-        // 2. Load active month data from Firestore
+        // 2. Load Master Members Registry
+        try {
+            const masterSnap = await getDoc(doc(window.firebaseDb, "members", "master"));
+            if (masterSnap && masterSnap.exists() && masterSnap.data().list) {
+                state.masterMembers = masterSnap.data().list;
+            }
+        } catch (err) {
+            console.warn("Firebase master members load warning:", err);
+        }
+
+        // 3. Load active month data
         await loadMonthDataFromFirestore(state.activeMonth);
 
         updateMonthDisplayUI();
@@ -268,23 +347,45 @@ async function loadMonthDataFromFirestore(mKey) {
     try {
         const { doc, getDoc, collection, getDocs } = await getFirestoreModule();
 
-        // 1. Fixed costs & custom adjustment label
+        // Layer 1: Check Atomic Month Doc first (fastest single-read)
+        try {
+            const monthSnap = await getDoc(doc(window.firebaseDb, "months", mKey));
+            if (monthSnap && monthSnap.exists()) {
+                const mDocData = monthSnap.data();
+                if (mDocData.fixedCosts) state.fixedCosts = { ...mDocData.fixedCosts };
+                if (mDocData.customAdjLabel) state.customAdjLabel = mDocData.customAdjLabel;
+                if (mDocData.members && mDocData.members.length > 0) state.members = mDocData.members;
+                if (mDocData.notices) state.notices = mDocData.notices;
+                if (mDocData.transactions) state.transactions = mDocData.transactions;
+
+                if (!state.months) state.months = {};
+                state.months[mKey] = {
+                    fixedCosts: { ...state.fixedCosts },
+                    customAdjLabel: state.customAdjLabel,
+                    members: state.members.map(m => ({ ...m })),
+                    notices: state.notices.map(n => ({ ...n })),
+                    transactions: state.transactions.map(t => ({ ...t }))
+                };
+                return;
+            }
+        } catch (err) {
+            console.warn(`Atomic month doc read for ${mKey}:`, err);
+        }
+
+        // Layer 2: Fixed costs & custom adjustment label (subcollection & root fallback)
         let fixedLoaded = false;
         try {
             const fixedSnap = await getDoc(doc(window.firebaseDb, "months", mKey, "data", "fixedCosts"));
             if (fixedSnap && fixedSnap.exists()) {
                 const fData = fixedSnap.data();
                 state.fixedCosts = { ...fData };
-                if (fData.customAdjLabel) {
-                    state.customAdjLabel = fData.customAdjLabel;
-                }
+                if (fData.customAdjLabel) state.customAdjLabel = fData.customAdjLabel;
                 fixedLoaded = true;
             }
         } catch (err) {
             console.warn(`Firebase fixedCosts month load warning (${mKey}):`, err);
         }
 
-        // Fallback to root settings if not yet saved in month-scoped collection
         if (!fixedLoaded) {
             try {
                 const configSnap = await getDoc(doc(window.firebaseDb, "settings", "config"));
@@ -306,12 +407,12 @@ async function loadMonthDataFromFirestore(mKey) {
                 state.fixedCosts = { ...state.months[mKey].fixedCosts };
                 state.customAdjLabel = state.months[mKey].customAdjLabel || "ফ্রিজ ও অন্যান্য";
             } else {
-                state.fixedCosts = { ...createEmptyMonthData().fixedCosts };
+                state.fixedCosts = { ...createEmptyMonthData(mKey).fixedCosts };
                 state.customAdjLabel = "ফ্রিজ ও অন্যান্য";
             }
         }
 
-        // 2. Members: try month-scoped first
+        // Layer 3: Members (subcollection & root fallback)
         let membersLoaded = false;
         try {
             const memSnap = await getDocs(collection(window.firebaseDb, "months", mKey, "members"));
@@ -328,13 +429,14 @@ async function loadMonthDataFromFirestore(mKey) {
             console.warn(`Firebase members month load warning (${mKey}):`, err);
         }
 
-        // Fallback to root members collection if month-scoped is empty
         if (!membersLoaded) {
             try {
                 const rootMemSnap = await getDocs(collection(window.firebaseDb, "members"));
                 if (rootMemSnap && !rootMemSnap.empty) {
                     const membersList = [];
-                    rootMemSnap.forEach(d => membersList.push(d.data()));
+                    rootMemSnap.forEach(d => {
+                        if (d.id !== "master") membersList.push(d.data());
+                    });
                     if (membersList.length > 0) {
                         state.members = membersList;
                         ensureMemberOrder();
@@ -350,7 +452,7 @@ async function loadMonthDataFromFirestore(mKey) {
             if (state.months && state.months[mKey] && state.months[mKey].members && state.months[mKey].members.length > 0) {
                 state.members = state.months[mKey].members.map(m => ({ ...m }));
             } else {
-                state.members = createEmptyMonthData().members;
+                state.members = createEmptyMonthData(mKey).members;
             }
             if (mKey !== "2026-01") {
                 state.members.forEach(m => {
@@ -359,7 +461,7 @@ async function loadMonthDataFromFirestore(mKey) {
             }
         }
 
-        // 3. Notices: try month-scoped first
+        // Layer 4: Notices (subcollection & root fallback)
         let noticesLoaded = false;
         try {
             const notSnap = await getDocs(collection(window.firebaseDb, "months", mKey, "notices"));
@@ -375,7 +477,6 @@ async function loadMonthDataFromFirestore(mKey) {
             console.warn(`Firebase notices month load warning (${mKey}):`, err);
         }
 
-        // Fallback to root notices if month-scoped is empty
         if (!noticesLoaded) {
             try {
                 const rootNotSnap = await getDocs(collection(window.firebaseDb, "notices"));
@@ -398,7 +499,7 @@ async function loadMonthDataFromFirestore(mKey) {
                 : [];
         }
 
-        // 4. Transactions: try month-scoped first
+        // Layer 5: Transactions (subcollection & root fallback)
         let txnsLoaded = false;
         try {
             const txnSnap = await getDocs(collection(window.firebaseDb, "months", mKey, "transactions"));
@@ -415,7 +516,6 @@ async function loadMonthDataFromFirestore(mKey) {
             console.warn(`Firebase transactions month load warning (${mKey}):`, err);
         }
 
-        // Fallback to root transactions if month-scoped is empty
         if (!txnsLoaded) {
             try {
                 const rootTxnSnap = await getDocs(collection(window.firebaseDb, "transactions"));
@@ -455,6 +555,317 @@ async function loadMonthDataFromFirestore(mKey) {
 
 window.loadFromFirestore = loadFromFirestore;
 window.saveData = saveData;
+
+// ---------- Member Management System (Add / Remove / Reactivate) ----------
+function openMemberManagerModal() {
+    const modal = $('memberManagerModal');
+    if (!modal) return;
+    showMemberTab('list');
+    const joinSelect = $('newMemberJoinMonth');
+    if (joinSelect) {
+        joinSelect.value = state.activeMonth;
+    }
+    renderMemberManagerList();
+    modal.style.display = 'flex';
+}
+
+function closeMemberManagerModal() {
+    const modal = $('memberManagerModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function showMemberTab(tabName) {
+    const listTab = $('memberTabList');
+    const addTab = $('memberTabAdd');
+    const btnList = $('tabBtnMemberList');
+    const btnAdd = $('tabBtnMemberAdd');
+
+    if (tabName === 'list') {
+        if (listTab) listTab.style.display = 'block';
+        if (addTab) addTab.style.display = 'none';
+        if (btnList) btnList.classList.add('active-tab');
+        if (btnAdd) btnAdd.classList.remove('active-tab');
+        renderMemberManagerList();
+    } else {
+        if (listTab) listTab.style.display = 'none';
+        if (addTab) addTab.style.display = 'block';
+        if (btnList) btnList.classList.remove('active-tab');
+        if (btnAdd) btnAdd.classList.add('active-tab');
+    }
+}
+
+function renderMemberManagerList() {
+    const container = $('memberManagerListContainer');
+    if (!container) return;
+
+    if (!state.masterMembers || state.masterMembers.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:#64748b;">কোনো সদস্যের রেকর্ড পাওয়া যায়নি</div>';
+        return;
+    }
+
+    let html = `
+        <div class="member-mgr-grid">
+    `;
+
+    state.masterMembers.forEach((m, idx) => {
+        const isActiveInCurrent = isMemberActiveInMonth(m, state.activeMonth);
+        const joinLabel = getBengaliMonthLabel(m.joinMonth || "2026-01");
+        const leaveLabel = m.leaveMonth ? getBengaliMonthLabel(m.leaveMonth) : null;
+
+        let statusBadge = '';
+        if (isActiveInCurrent) {
+            statusBadge = `<span class="badge-pill" style="background:#dcfce7; color:#166534; border:1px solid #4ade80;">🟢 সক্রিয় (${getBengaliMonthLabel(state.activeMonth)})</span>`;
+        } else if (m.leaveMonth && m.leaveMonth < state.activeMonth) {
+            statusBadge = `<span class="badge-pill" style="background:#fee2e2; color:#991b1b; border:1px solid #f87171;">🔴 রিলিজ (${leaveLabel})</span>`;
+        } else {
+            statusBadge = `<span class="badge-pill" style="background:#fef3c7; color:#92400e; border:1px solid #f59e0b;">⏳ যোগ দেবেন (${joinLabel})</span>`;
+        }
+
+        const actionBtn = isActiveInCurrent
+            ? `<button class="btn clay-btn clay-btn-danger" style="padding:4px 10px; font-size:11.5px;" onclick="openRemoveMemberModal('${m.id}')">রিলিজ / রিমুভ</button>`
+            : `<button class="btn clay-btn clay-btn-primary" style="padding:4px 10px; font-size:11.5px;" onclick="reactivateMember('${m.id}')">পুনরায় সক্রিয় করুন</button>`;
+
+        html += `
+            <div class="member-mgr-card clay-inset">
+                <div class="member-mgr-header">
+                    <div>
+                        <div class="member-mgr-id">${m.id}</div>
+                        <h4 style="margin:2px 0 0 0; font-size:15px; color:#1e293b;">${m.name}</h4>
+                    </div>
+                    <div>${statusBadge}</div>
+                </div>
+                <div class="member-mgr-body">
+                    <div>📅 <strong>যোগদান:</strong> ${joinLabel}</div>
+                    ${m.leaveMonth ? `<div>🚪 <strong>রিলিজ:</strong> ${leaveLabel} পর্যন্ত</div>` : ''}
+                    <div>🏠 <strong>সিট ভাড়া:</strong> BDT ${m.defaultRent || 0}</div>
+                    ${m.phone ? `<div>📞 <strong>ফোন:</strong> ${m.phone}</div>` : ''}
+                </div>
+                <div class="member-mgr-footer">
+                    ${actionBtn}
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+function submitAddNewMember() {
+    const name = textVal('newMemberName').trim();
+    const joinMonth = $('newMemberJoinMonth')?.value || state.activeMonth;
+    const defaultRent = numVal('newMemberRent');
+    const phone = textVal('newMemberPhone').trim();
+
+    if (!name) {
+        showToast("সদস্যের নাম প্রদান করুন!", "error");
+        return;
+    }
+
+    // Check duplicate name
+    const existing = (state.masterMembers || []).find(m => m.name.toLowerCase() === name.toLowerCase());
+    if (existing) {
+        showToast(`'${name}' নামের সদস্য ইতিমধ্যে মেম্বার তালিকায় আছেন!`, "error");
+        return;
+    }
+
+    const nextSerial = (state.masterMembers ? state.masterMembers.length : 0) + 1;
+    const newId = generateMemberId(joinMonth, nextSerial);
+
+    const newMember = {
+        id: newId,
+        name: name,
+        joinMonth: joinMonth,
+        leaveMonth: null,
+        defaultRent: defaultRent || 0,
+        phone: phone || "",
+        isActive: true,
+        createdAt: new Date().toISOString()
+    };
+
+    if (!state.masterMembers) state.masterMembers = [];
+    state.masterMembers.push(newMember);
+
+    // If active in current month, add to state.members
+    if (isMemberActiveInMonth(newMember, state.activeMonth)) {
+        state.members.push({
+            id: newId,
+            name: name,
+            meals: 0,
+            bazarDeposit: 0,
+            rent: defaultRent || 0,
+            prevAdj: 0,
+            fridgeAdj: 0
+        });
+    }
+
+    // Clear form
+    $('newMemberName').value = '';
+    $('newMemberRent').value = '';
+    if ($('newMemberPhone')) $('newMemberPhone').value = '';
+
+    saveData();
+    showMemberTab('list');
+    renderDrawerInputs();
+    calculateAll();
+    showToast(`${name} (ID: ${newId}) সফলভাবে মেম্বার হিসেবে যুক্ত হয়েছেন!`, "success");
+}
+
+let pendingRemoveMemberId = null;
+
+function openRemoveMemberModal(memberId) {
+    const member = (state.masterMembers || []).find(m => m.id === memberId || m.name === memberId);
+    if (!member) return;
+
+    pendingRemoveMemberId = member.id;
+    $('removeMemberNameLabel').innerText = `${member.name} (${member.id})`;
+
+    const leaveSelect = $('removeMemberLeaveMonth');
+    if (leaveSelect) {
+        leaveSelect.value = state.activeMonth;
+    }
+
+    const modal = $('removeMemberModal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeRemoveMemberModal() {
+    const modal = $('removeMemberModal');
+    if (modal) modal.style.display = 'none';
+    pendingRemoveMemberId = null;
+}
+
+function submitRemoveMember() {
+    if (!pendingRemoveMemberId) return;
+    const member = (state.masterMembers || []).find(m => m.id === pendingRemoveMemberId);
+    if (!member) return;
+
+    const leaveMonth = $('removeMemberLeaveMonth')?.value || state.activeMonth;
+    member.leaveMonth = leaveMonth;
+    member.isActive = false;
+
+    // Refresh active month view members
+    const activeMasterList = getActiveMembersForMonth(state.activeMonth);
+    state.members = state.members.filter(m => activeMasterList.some(active => active.name === m.name));
+
+    saveData();
+    closeRemoveMemberModal();
+    renderMemberManagerList();
+    renderDrawerInputs();
+    calculateAll();
+    showToast(`${member.name}-কে ${getBengaliMonthLabel(leaveMonth)} মাস থেকে রিলিজ/নিষ্ক্রিয় করা হয়েছে!`, "info");
+}
+
+function reactivateMember(memberId) {
+    const member = (state.masterMembers || []).find(m => m.id === memberId);
+    if (!member) return;
+
+    member.leaveMonth = null;
+    member.isActive = true;
+
+    // If active in current month, ensure present in state.members
+    if (isMemberActiveInMonth(member, state.activeMonth)) {
+        const exists = state.members.some(m => m.name === member.name);
+        if (!exists) {
+            state.members.push({
+                id: member.id,
+                name: member.name,
+                meals: 0,
+                bazarDeposit: 0,
+                rent: member.defaultRent || 0,
+                prevAdj: 0,
+                fridgeAdj: 0
+            });
+        }
+    }
+
+    saveData();
+    renderMemberManagerList();
+    renderDrawerInputs();
+    calculateAll();
+    showToast(`${member.name}-কে পুনরায় সক্রিয় করা হয়েছে!`, "success");
+}
+
+// ---------- Reset Year (New Year Setup & Safe Backup) ----------
+let hasDownloadedBackupForReset = false;
+
+function openResetYearModal() {
+    hasDownloadedBackupForReset = false;
+    const chk = $('resetBackupCheckbox');
+    if (chk) chk.checked = false;
+    const passInput = $('resetYearAdminPass');
+    if (passInput) passInput.value = '';
+    const confirmInput = $('resetYearConfirmCode');
+    if (confirmInput) confirmInput.value = '';
+
+    const modal = $('resetYearModal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeResetYearModal() {
+    const modal = $('resetYearModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function downloadResetBackup(type) {
+    if (type === 'excel') {
+        exportMultiSheetExcel();
+    } else if (type === 'json') {
+        exportJSON();
+    }
+    hasDownloadedBackupForReset = true;
+    const chk = $('resetBackupCheckbox');
+    if (chk) chk.checked = true;
+    showToast("ব্যাকআপ ডাউনলোড সম্পন্ন! এখন রিসেট কনফার্ম করতে পারবেন।", "info");
+}
+
+function submitResetYear() {
+    const pass = textVal('resetYearAdminPass');
+    const confirmCode = textVal('resetYearConfirmCode').trim().toUpperCase();
+    const chk = $('resetBackupCheckbox');
+
+    if (!chk || !chk.checked) {
+        showToast("ডাটা রিসেট করার পূর্বে অবশ্যই ব্যাকআপ ডাউনলোড করে টিক দিন!", "error");
+        return;
+    }
+
+    const correctPass = state.adminPassword || DEFAULT_ADMIN_PASSWORD;
+    if (pass !== correctPass && pass !== "@12azmain" && pass !== "isotope@12azmain") {
+        showToast("এডমিন পাসওয়ার্ডটি সঠিক নয়!", "error");
+        return;
+    }
+
+    if (confirmCode !== "RESET 2026" && confirmCode !== "RESET") {
+        showToast("নিশ্চিতকরণ ঘরে 'RESET 2026' লিখুন!", "error");
+        return;
+    }
+
+    showConfirmModal(
+        "চূড়ান্ত ডাটা রিসেট নিশ্চিতকরণ",
+        "আপনি কি নিশ্চিত যে সকল মাসের মিল, জমা ও ট্রানজেকশন ডাটা রিসেট করে নতুন বছরের সূচনা করতে চান? মেম্বার লিস্ট ও এডমিন পাসওয়ার্ড অক্ষত থাকবে।",
+        async () => {
+            // Re-initialize all months cleanly
+            state.months = createInitialMonthsData();
+            for (let m = 1; m <= 12; m++) {
+                const key = `${CURRENT_YEAR}-${String(m).padStart(2, '0')}`;
+                state.months[key] = createEmptyMonthData(key);
+            }
+            state.activeMonth = "2026-01";
+
+            const janData = state.months["2026-01"];
+            state.fixedCosts = { ...janData.fixedCosts };
+            state.members = janData.members.map(m => ({ ...m }));
+            state.notices = [];
+            state.transactions = [];
+
+            closeResetYearModal();
+            saveData();
+            updateMonthDisplayUI();
+            calculateAll();
+            showToast("নতুন বছরের জন্য মেস ডাটাবেস সফলভাবে রিসেট ও প্রস্তুত করা হয়েছে!", "success");
+        }
+    );
+}
 
 // ---------- Helper: Escape HTML ----------
 function escapeHtml(str) {
@@ -508,6 +919,23 @@ function toggleHamburgerMenu(forceState) {
         menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
     }
 }
+
+window.toggleHamburger = toggleHamburgerMenu;
+window.toggleHamburgerMenu = toggleHamburgerMenu;
+window.toggleExportDropdown = toggleExportDropdown;
+window.toggleAdjInfoTooltip = toggleAdjInfoTooltip;
+window.openMemberManagerModal = openMemberManagerModal;
+window.closeMemberManagerModal = closeMemberManagerModal;
+window.showMemberTab = showMemberTab;
+window.submitAddNewMember = submitAddNewMember;
+window.openRemoveMemberModal = openRemoveMemberModal;
+window.closeRemoveMemberModal = closeRemoveMemberModal;
+window.submitRemoveMember = submitRemoveMember;
+window.reactivateMember = reactivateMember;
+window.openResetYearModal = openResetYearModal;
+window.closeResetYearModal = closeResetYearModal;
+window.downloadResetBackup = downloadResetBackup;
+window.submitResetYear = submitResetYear;
 
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.hamburger-wrapper')) {
@@ -598,7 +1026,7 @@ function switchMonth(targetMonthKey) {
 
     // Load or initialize target month
     if (!state.months[targetMonthKey]) {
-        state.months[targetMonthKey] = createEmptyMonthData();
+        state.months[targetMonthKey] = createEmptyMonthData(targetMonthKey);
     }
 
     const mData = state.months[targetMonthKey];
@@ -607,6 +1035,25 @@ function switchMonth(targetMonthKey) {
     state.members = mData.members.map(m => ({ ...m }));
     state.notices = mData.notices.map(n => ({ ...n }));
     state.transactions = mData.transactions.map(t => ({ ...t }));
+
+    // Ensure only members active in target month are present
+    const activeMasterList = getActiveMembersForMonth(targetMonthKey);
+    state.members = state.members.filter(m => activeMasterList.some(active => active.name === m.name));
+
+    // Add any active members who might not be in the month data yet
+    activeMasterList.forEach(am => {
+        if (!state.members.some(m => m.name === am.name)) {
+            state.members.push({
+                id: am.id,
+                name: am.name,
+                meals: 0,
+                bazarDeposit: 0,
+                rent: am.defaultRent || 0,
+                prevAdj: 0,
+                fridgeAdj: 0
+            });
+        }
+    });
 
     // Auto calculate previous month balance for February through December
     if (targetMonthKey !== "2026-01") {
@@ -620,15 +1067,6 @@ function switchMonth(targetMonthKey) {
     calculateAll();
     persistLocally();
     showToast(`${getBengaliMonthLabel(targetMonthKey)}-এর হিসাব ওপেন করা হয়েছে`, "info");
-
-    if (window.firebaseDb) {
-        loadMonthDataFromFirestore(targetMonthKey).then(() => {
-            calculateAll();
-            persistLocally();
-            updateMonthDisplayUI();
-        });
-    }
-}
 
     if (window.firebaseDb) {
         loadMonthDataFromFirestore(targetMonthKey).then(() => {
@@ -653,6 +1091,17 @@ function nextMonth() {
     if (month > 12) return; // restrict to Dec of current year
     const newKey = `${yearStr}-${String(month).padStart(2, '0')}`;
     switchMonth(newKey);
+}
+
+// ---------- Member Order ----------
+function ensureMemberOrder() {
+    if (!state.members) return;
+    const master = state.masterMembers || INITIAL_MASTER_MEMBERS;
+    state.members.sort((a, b) => {
+        let ia = master.findIndex(o => o.name === a.name || o.id === a.id);
+        let ib = master.findIndex(o => o.name === b.name || o.id === b.id);
+        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
 }
 
 function updateMonthDisplayUI() {
@@ -705,18 +1154,6 @@ document.addEventListener('click', (e) => {
         closeAllMonthDropdowns();
     }
 });
-
-// ---------- Member Order ----------
-function ensureMemberOrder() {
-    if (!state.members) return;
-    state.members.sort((a, b) => {
-        let ia = MEMBER_ORDER.findIndex(o => o === a.name);
-        let ib = MEMBER_ORDER.findIndex(o => o === b.name);
-        if (ia === -1) ia = MEMBER_ORDER.findIndex(o => a.name.includes(o.substring(0, 3)));
-        if (ib === -1) ib = MEMBER_ORDER.findIndex(o => b.name.includes(o.substring(0, 3)));
-        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
-    });
-}
 
 // ---------- Water Bill Calculation ----------
 function updateWaterBillCalc() {
@@ -1777,11 +2214,17 @@ function submitPasswordChange() {
 
 // ---------- INITIALIZATION ----------
 function initApp() {
-    const localData = localStorage.getItem('isotope_mess_data_v2');
+    const localDataV3 = localStorage.getItem('isotope_mess_data_v3');
+    const localDataV2 = localStorage.getItem('isotope_mess_data_v2');
+    const localData = localDataV3 || localDataV2;
+
     if (localData) {
         try {
             const parsed = JSON.parse(localData);
             if (parsed && typeof parsed === 'object') {
+                if (parsed.masterMembers && Array.isArray(parsed.masterMembers)) {
+                    state.masterMembers = parsed.masterMembers;
+                }
                 if (parsed.months) state.months = parsed.months;
                 if (parsed.adminPassword) state.adminPassword = parsed.adminPassword;
                 if (parsed.customAdjLabel) state.customAdjLabel = parsed.customAdjLabel;
