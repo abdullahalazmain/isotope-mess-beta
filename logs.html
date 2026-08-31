@@ -54,12 +54,25 @@
       measurementId: "G-TS9R91ZKK1"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const db = getFirestore(app);
+    // ============================================================
+    // LOCAL DEV / PRODUCTION SWITCH
+    // ------------------------------------------------------------
+    // In local development, Firebase is intentionally NOT initialized:
+    // the app loads from the local mock database (src/data/mockDatabase.json)
+    // and saves only to localStorage. NO request ever reaches live Firestore.
+    // In production (Vercel), Firebase connects as normal.
+    // ============================================================
+    const IS_DEV_MODE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    window.IS_DEV_MODE = IS_DEV_MODE;
 
-    window.firebaseApp = app;
-    window.firebaseDb = db;
+    let db = null;
+    if (!IS_DEV_MODE) {
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+      db = getFirestore(app);
+      window.firebaseApp = app;
+      window.firebaseDb = db;
+    }
 
     async function loadLogs() {
         let transactions = [];
@@ -72,12 +85,14 @@
         }
 
         try {
-            const querySnapshot = await getDocs(collection(db, "transactions"));
-            if (!querySnapshot.empty) {
-                transactions = [];
-                querySnapshot.forEach((doc) => {
-                    transactions.push(doc.data());
-                });
+            if (db) {
+                const querySnapshot = await getDocs(collection(db, "transactions"));
+                if (!querySnapshot.empty) {
+                    transactions = [];
+                    querySnapshot.forEach((doc) => {
+                        transactions.push(doc.data());
+                    });
+                }
             }
         } catch(e) {
             if(e.code === 'permission-denied') {
