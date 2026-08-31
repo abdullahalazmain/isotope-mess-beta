@@ -238,8 +238,79 @@ th.highlight-column {
 .txn-page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #cbd5e1; padding-bottom: 12px; }
 .excel-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; background: #e2e8f0; padding: 12px; border-radius: 12px; }
 .toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.export-btns-group { display: flex; align-items: center; gap: 8px; }
-.export-sub-btns { display: flex; align-items: center; gap: 8px; }
+
+.export-dropdown-wrapper {
+    position: relative;
+    display: inline-block;
+}
+.export-main-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    font-weight: 700;
+}
+.print-toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    font-weight: 700;
+}
+.svg-arrow-down {
+    width: 16px;
+    height: 16px;
+    margin-left: -2px;
+}
+.export-menu-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 14px;
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.18);
+    z-index: 1000;
+    min-width: 275px;
+    padding: 8px;
+    animation: fadeInTooltip 0.15s ease;
+}
+.export-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+}
+.export-menu-item:hover {
+    background: #f1f5f9;
+}
+.export-menu-item .svg-icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+}
+.export-item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.export-item-text strong {
+    font-size: 13.5px;
+    color: #1e293b;
+    font-weight: 700;
+}
+.export-item-text small {
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.25;
+}
 
 .search-input-wrapper { position: relative; display: inline-block; }
 .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); fill: #64748b; }
@@ -858,11 +929,11 @@ th.highlight-column {
     .toolbar-left .search-input-wrapper { flex: 1; min-width: 0; }
     .toolbar-left .search-input-wrapper input { width: 100%; font-size: 12px; }
     .toolbar-left #txnMemberFilter { flex: 1; min-width: 0; font-size: 12px; }
-    .toolbar-right { width: 100%; flex-direction: column; align-items: stretch; gap: 8px; }
-    .export-btns-group { display: flex; flex-direction: column; width: 100%; gap: 8px; }
-    .full-csv-btn { width: 100%; justify-content: center; }
-    .export-sub-btns { display: flex; flex-direction: row; width: 100%; gap: 8px; }
-    .export-sub-btns .btn { flex: 1; justify-content: center; }
+    .toolbar-right { width: 100%; display: flex; flex-direction: row; align-items: center; gap: 8px; }
+    .toolbar-right .export-dropdown-wrapper { flex: 1; }
+    .toolbar-right .export-main-btn { width: 100%; justify-content: center; }
+    .toolbar-right .print-toolbar-btn { flex: 1; justify-content: center; }
+    .export-menu-dropdown { right: auto; left: 0; min-width: 250px; }
 
     .toast-container { right: 10px; left: 10px; bottom: 15px; }
     .toast { min-width: auto; width: 100%; }

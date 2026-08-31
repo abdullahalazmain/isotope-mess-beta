@@ -384,22 +384,40 @@
                 </select>
             </div>
             <div class="toolbar-right">
-                <span class="export-title" style="font-size: 13px; font-weight: 600; color: #475569;">এক্সপোর্ট করুন:</span>
-                <div class="export-btns-group">
-                    <button class="btn clay-btn full-csv-btn" onclick="exportMultiSheetExcel()" title="মেস সামারি, মেম্বার হিসাব ও ট্রানজেকশন লগ আলাদা শিটসহ এক্সপোর্ট করুন">
+                <div class="export-dropdown-wrapper">
+                    <button id="exportDropdownBtn" class="btn clay-btn clay-btn-primary export-main-btn" onclick="toggleExportDropdown(event)" title="রিপোর্ট এক্সপোর্ট করুন">
                         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-                        Excel (মাল্টি-শিট)
+                        <span>Export</span>
+                        <svg class="svg-icon svg-arrow-down" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
                     </button>
-                    <div class="export-sub-btns">
-                        <button class="btn clay-btn" onclick="exportCSV()" title="CSV ফরম্যাট">
-                            CSV
+                    <div id="exportMenuDropdown" class="export-menu-dropdown" style="display: none;">
+                        <button class="export-menu-item" onclick="exportMultiSheetExcel(); toggleExportDropdown(false);">
+                            <svg class="svg-icon" style="fill:#16a34a;" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                            <div class="export-item-text">
+                                <strong>CSV (Google Sheet)</strong>
+                                <small>৩টি আলাদা শিট সহ মাল্টি-শিট এক্সেল/গুগল শিট</small>
+                            </div>
                         </button>
-                        <button class="btn clay-btn" onclick="exportPDF()">
-                            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
-                            প্রিন্ট / PDF
+                        <button class="export-menu-item" onclick="exportJSON(); toggleExportDropdown(false);">
+                            <svg class="svg-icon" style="fill:#d97706;" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+                            <div class="export-item-text">
+                                <strong>JSON ব্যাকআপ</strong>
+                                <small>সম্পূর্ণ ডাটা স্ট্রাকচার ব্যাকআপ ফাইল (.json)</small>
+                            </div>
+                        </button>
+                        <button class="export-menu-item" onclick="exportPDF(); toggleExportDropdown(false);">
+                            <svg class="svg-icon" style="fill:#dc2626;" viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+                            <div class="export-item-text">
+                                <strong>PDF রিপোর্ট</strong>
+                                <small>৩টি টেবিলসহ পূর্ণাঙ্গ PDF সংরক্ষণ / প্রিন্ট</small>
+                            </div>
                         </button>
                     </div>
                 </div>
+                <button class="btn clay-btn print-toolbar-btn" onclick="exportPDF()" title="প্রিন্ট ভিউ ওপেন করুন">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+                    <span>Print</span>
+                </button>
             </div>
         </div>
 
