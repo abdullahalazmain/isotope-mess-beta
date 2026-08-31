@@ -588,9 +588,41 @@ th.highlight-column {
     body { padding: 10px 6px; }
     .clay-card { padding: 14px 10px; border-radius: 16px; margin-bottom: 18px; }
 
-    .navbar { flex-direction: column; align-items: stretch; gap: 12px; }
-    .nav-buttons { display: flex; flex-direction: row; flex-wrap: nowrap; width: 100%; gap: 8px; justify-content: space-between; }
-    .nav-buttons .btn { flex: 1; padding: 8px 4px; font-size: 11.5px; white-space: nowrap; justify-content: center; }
+    .navbar {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 14px;
+    }
+    .brand-container {
+        width: 100%;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+    .month-switcher,
+    #monthSwitcher,
+    #txnMonthSwitcher,
+    #adminMonthSwitcher {
+        margin: 0 auto !important;
+        justify-content: center !important;
+        width: auto !important;
+    }
+    .nav-buttons {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        width: 100%;
+        gap: 8px;
+        justify-content: space-between;
+    }
+    .nav-buttons .btn {
+        flex: 1;
+        padding: 8px 6px;
+        font-size: 11.5px;
+        white-space: nowrap;
+        justify-content: center;
+    }
     .nav-buttons .btn svg { width: 14px; height: 14px; }
 
     #summaryTable { width: 100%; min-width: 0 !important; table-layout: fixed; }

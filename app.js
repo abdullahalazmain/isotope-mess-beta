@@ -203,30 +203,34 @@ async function saveData() {
         const { doc, setDoc } = await getFirestoreModule();
         const mKey = state.activeMonth;
 
-        // Global settings
+        // 1. Global settings (preserves config with fixedCosts for root/legacy support)
         await setDoc(doc(window.firebaseDb, "settings", "config"), {
+            fixedCosts: state.fixedCosts,
             customAdjLabel: state.customAdjLabel,
             adminPassword: state.adminPassword || DEFAULT_ADMIN_PASSWORD,
             activeMonth: state.activeMonth
         });
 
-        // Month-scoped fixed costs
+        // 2. Month-scoped fixed costs
         await setDoc(doc(window.firebaseDb, "months", mKey, "data", "fixedCosts"), state.fixedCosts);
 
-        // Month-scoped members
+        // 3. Members: Save to both months collection AND root collection (for live backward compatibility)
         for (let member of state.members) {
             const docId = member.name.replace(/\s+/g, '_');
             await setDoc(doc(window.firebaseDb, "months", mKey, "members", docId), member);
+            await setDoc(doc(window.firebaseDb, "members", docId), member);
         }
 
-        // Month-scoped notices
+        // 4. Notices: Save to both months collection AND root collection
         for (let notice of state.notices) {
             await setDoc(doc(window.firebaseDb, "months", mKey, "notices", String(notice.id)), notice);
+            await setDoc(doc(window.firebaseDb, "notices", String(notice.id)), notice);
         }
 
-        // Month-scoped transactions
+        // 5. Transactions: Save to both months collection AND root collection
         for (let txn of state.transactions) {
             await setDoc(doc(window.firebaseDb, "months", mKey, "transactions", String(txn.id)), txn);
+            await setDoc(doc(window.firebaseDb, "transactions", String(txn.id)), txn);
         }
     } catch (e) {
         console.error("Firebase save error:", e);
@@ -246,12 +250,15 @@ async function loadFromFirestore() {
                 if (configData.customAdjLabel) state.customAdjLabel = configData.customAdjLabel;
                 if (configData.adminPassword) state.adminPassword = configData.adminPassword;
                 if (configData.activeMonth) state.activeMonth = configData.activeMonth;
+                if (configData.fixedCosts && typeof configData.fixedCosts === 'object') {
+                    state.fixedCosts = { ...state.fixedCosts, ...configData.fixedCosts };
+                }
             }
         } catch (err) {
             console.warn("Firebase config load warning:", err);
         }
 
-        // 2. Load active month data from Firestore
+        // 2. Load active month data from Firestore (with root collection fallback)
         await loadMonthDataFromFirestore(state.activeMonth);
 
         updateMonthDisplayUI();
@@ -267,17 +274,32 @@ async function loadMonthDataFromFirestore(mKey) {
     try {
         const { doc, getDoc, collection, getDocs } = await getFirestoreModule();
 
-        // Fixed costs
+        // 1. Fixed costs: try month-scoped first, then root config
+        let fixedLoaded = false;
         try {
             const fixedSnap = await getDoc(doc(window.firebaseDb, "months", mKey, "data", "fixedCosts"));
             if (fixedSnap && fixedSnap.exists()) {
                 state.fixedCosts = fixedSnap.data();
+                fixedLoaded = true;
             }
         } catch (err) {
-            console.warn(`Firebase fixedCosts load warning (${mKey}):`, err);
+            console.warn(`Firebase fixedCosts month load warning (${mKey}):`, err);
         }
 
-        // Members
+        if (!fixedLoaded) {
+            try {
+                const configSnap = await getDoc(doc(window.firebaseDb, "settings", "config"));
+                if (configSnap && configSnap.exists()) {
+                    const cfg = configSnap.data();
+                    if (cfg.fixedCosts) state.fixedCosts = { ...state.fixedCosts, ...cfg.fixedCosts };
+                }
+            } catch (err) {
+                console.warn(`Firebase root fixedCosts load warning:`, err);
+            }
+        }
+
+        // 2. Members: try month-scoped first, then root collection fallback (existing real data)
+        let membersLoaded = false;
         try {
             const memSnap = await getDocs(collection(window.firebaseDb, "months", mKey, "members"));
             if (memSnap && !memSnap.empty) {
@@ -286,35 +308,92 @@ async function loadMonthDataFromFirestore(mKey) {
                 if (membersList.length > 0) {
                     state.members = membersList;
                     ensureMemberOrder();
+                    membersLoaded = true;
                 }
             }
         } catch (err) {
-            console.warn(`Firebase members load warning (${mKey}):`, err);
+            console.warn(`Firebase members month load warning (${mKey}):`, err);
         }
 
-        // Notices
+        // Fallback to root members collection if month collection is empty
+        if (!membersLoaded) {
+            try {
+                const rootMemSnap = await getDocs(collection(window.firebaseDb, "members"));
+                if (rootMemSnap && !rootMemSnap.empty) {
+                    const membersList = [];
+                    rootMemSnap.forEach(d => membersList.push(d.data()));
+                    if (membersList.length > 0) {
+                        state.members = membersList;
+                        ensureMemberOrder();
+                    }
+                }
+            } catch (err) {
+                console.warn(`Firebase root members load warning:`, err);
+            }
+        }
+
+        // 3. Notices: try month-scoped first, then root collection fallback
+        let noticesLoaded = false;
         try {
             const notSnap = await getDocs(collection(window.firebaseDb, "months", mKey, "notices"));
             if (notSnap && !notSnap.empty) {
                 const noticesList = [];
                 notSnap.forEach(d => noticesList.push(d.data()));
-                state.notices = noticesList;
+                if (noticesList.length > 0) {
+                    state.notices = noticesList;
+                    noticesLoaded = true;
+                }
             }
         } catch (err) {
-            console.warn(`Firebase notices load warning (${mKey}):`, err);
+            console.warn(`Firebase notices month load warning (${mKey}):`, err);
         }
 
-        // Transactions
+        if (!noticesLoaded) {
+            try {
+                const rootNotSnap = await getDocs(collection(window.firebaseDb, "notices"));
+                if (rootNotSnap && !rootNotSnap.empty) {
+                    const noticesList = [];
+                    rootNotSnap.forEach(d => noticesList.push(d.data()));
+                    if (noticesList.length > 0) {
+                        state.notices = noticesList;
+                    }
+                }
+            } catch (err) {
+                console.warn(`Firebase root notices load warning:`, err);
+            }
+        }
+
+        // 4. Transactions: try month-scoped first, then root collection fallback
+        let txnsLoaded = false;
         try {
             const txnSnap = await getDocs(collection(window.firebaseDb, "months", mKey, "transactions"));
             if (txnSnap && !txnSnap.empty) {
                 const txnsList = [];
                 txnSnap.forEach(d => txnsList.push(d.data()));
-                txnsList.sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
-                state.transactions = txnsList;
+                if (txnsList.length > 0) {
+                    txnsList.sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
+                    state.transactions = txnsList;
+                    txnsLoaded = true;
+                }
             }
         } catch (err) {
-            console.warn(`Firebase transactions load warning (${mKey}):`, err);
+            console.warn(`Firebase transactions month load warning (${mKey}):`, err);
+        }
+
+        if (!txnsLoaded) {
+            try {
+                const rootTxnSnap = await getDocs(collection(window.firebaseDb, "transactions"));
+                if (rootTxnSnap && !rootTxnSnap.empty) {
+                    const txnsList = [];
+                    rootTxnSnap.forEach(d => txnsList.push(d.data()));
+                    if (txnsList.length > 0) {
+                        txnsList.sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
+                        state.transactions = txnsList;
+                    }
+                }
+            } catch (err) {
+                console.warn(`Firebase root transactions load warning:`, err);
+            }
         }
 
         // Update local state.months dictionary
@@ -329,6 +408,9 @@ async function loadMonthDataFromFirestore(mKey) {
         console.error(`Firebase month load error for ${mKey}:`, e);
     }
 }
+
+window.loadFromFirestore = loadFromFirestore;
+window.saveData = saveData;
 
 // ---------- Auto Previous Month Balance Calculation ----------
 function getPrevMonthKey(mKey) {
@@ -946,6 +1028,7 @@ function deleteTransaction(txnId) {
                     const { doc, deleteDoc } = await getFirestoreModule();
                     const mKey = state.activeMonth;
                     await deleteDoc(doc(window.firebaseDb, "months", mKey, "transactions", String(txnId)));
+                    await deleteDoc(doc(window.firebaseDb, "transactions", String(txnId)));
                 } catch (e) {
                     console.error("Firebase delete transaction error:", e);
                 }
@@ -965,9 +1048,10 @@ function deleteNotice(idx) {
 
     if (noticeId && window.firebaseDb) {
         getFirestoreModule()
-            .then(({ doc, deleteDoc }) => {
+            .then(async ({ doc, deleteDoc }) => {
                 const mKey = state.activeMonth;
-                return deleteDoc(doc(window.firebaseDb, "months", mKey, "notices", String(noticeId)));
+                await deleteDoc(doc(window.firebaseDb, "months", mKey, "notices", String(noticeId)));
+                await deleteDoc(doc(window.firebaseDb, "notices", String(noticeId)));
             })
             .catch(e => console.error("Firebase delete notice error:", e));
     }
@@ -1364,6 +1448,15 @@ function initApp() {
 
 window.addEventListener('firebase-ready', () => {
     loadFromFirestore();
+});
+
+window.addEventListener('online', () => {
+    showToast("📶 ইন্টারনেট সংযোগ পাওয়া গেছে! ডাটা সিঙ্ক করা হচ্ছে...", "success");
+    loadFromFirestore();
+});
+
+window.addEventListener('offline', () => {
+    showToast("📵 আপনি অফলাইনে আছেন। সংরক্ষিত ডাটা দেখানো হচ্ছে।", "error");
 });
 
 window.addEventListener('DOMContentLoaded', () => {

@@ -588,6 +588,9 @@
         window.firebaseApp = app;
         window.firebaseDb = db;
         window.dispatchEvent(new CustomEvent('firebase-ready'));
+        if (typeof window.loadFromFirestore === 'function') {
+            window.loadFromFirestore();
+        }
     }
 </script>
 
