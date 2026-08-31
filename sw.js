@@ -1,7 +1,7 @@
 // Isotope Mess Manager - Service Worker
 // Strategy: Cache-first for static assets, Network-first for dynamic data
 
-const CACHE_NAME = 'isotope-mess-v1';
+const CACHE_NAME = 'isotope-mess-v2.2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -18,7 +18,7 @@ const STATIC_ASSETS = [
 // Install Event: Cache all static assets
 // =====================
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Service Worker...');
+  console.log('[SW] Installing Service Worker v2.2...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[SW] Caching static assets...');
@@ -34,7 +34,7 @@ self.addEventListener('install', (event) => {
 // Activate Event: Clean old caches
 // =====================
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating Service Worker...');
+  console.log('[SW] Activating Service Worker v2.2...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -51,7 +51,7 @@ self.addEventListener('activate', (event) => {
 });
 
 // =====================
-// Fetch Event: Network-first with cache fallback
+// Fetch Event: Network-first for fresh updates, Cache fallback for offline
 // =====================
 self.addEventListener('fetch', (event) => {
   const { request } = event;
@@ -70,51 +70,27 @@ self.addEventListener('fetch', (event) => {
     return; // Let the browser handle it normally
   }
 
-  // For local static assets: Cache-first, then network fallback
-  if (
-    url.pathname.match(/\.(css|js|png|jpg|jpeg|svg|ico|woff2|woff|ttf)$/) ||
-    url.pathname === '/' ||
-    url.pathname === '/index.html' ||
-    url.pathname === '/manifest.json'
-  ) {
-    event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        if (cachedResponse) {
-          // Serve from cache, but update cache in background (stale-while-revalidate)
-          fetch(request).then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, networkResponse);
-              });
-            }
-          }).catch(() => { /* network unavailable, ignore */ });
-          return cachedResponse;
-        }
-
-        // Not in cache: fetch from network and cache
-        return fetch(request).then((networkResponse) => {
-          if (!networkResponse || networkResponse.status !== 200) {
-            return networkResponse;
-          }
+  // Network-First for core web files (HTML, JS, CSS, JSON)
+  event.respondWith(
+    fetch(request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(request, responseToCache);
           });
-          return networkResponse;
-        }).catch(() => {
-          // Network failed and no cache: show offline fallback for HTML pages
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        // Offline fallback from cache
+        return caches.match(request).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse;
           if (request.headers.get('accept') && request.headers.get('accept').includes('text/html')) {
             return caches.match('/index.html');
           }
         });
       })
-    );
-    return;
-  }
-
-  // Default: Network-first for everything else
-  event.respondWith(
-    fetch(request).catch(() => caches.match(request))
   );
 });
 
