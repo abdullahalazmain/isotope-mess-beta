@@ -881,17 +881,19 @@ function escapeHtml(str) {
 // ---------- Adjustment Info Tooltip Handler ----------
 function toggleAdjInfoTooltip(e) {
     if (e) {
-        e.stopPropagation();
-        e.preventDefault();
+        if (e.stopPropagation) e.stopPropagation();
+        if (e.preventDefault) e.preventDefault();
     }
-    const target = e ? e.currentTarget : null;
-    if (!target) return;
-    const badge = target.nextElementSibling;
-    if (badge) {
-        const isShown = (badge.style.display === 'block');
-        document.querySelectorAll('.adj-info-badge').forEach(b => b.style.display = 'none');
-        badge.style.display = isShown ? 'none' : 'block';
-    }
+    const btn = (e && e.currentTarget) ? e.currentTarget : (e && e.target ? e.target.closest('.adj-info-btn') : null);
+    if (!btn) return;
+    const wrapper = btn.closest('.adj-info-wrapper');
+    if (!wrapper) return;
+    const badge = wrapper.querySelector('.adj-info-badge');
+    if (!badge) return;
+
+    const isShown = (badge.style.display === 'inline-flex' || badge.style.display === 'block');
+    document.querySelectorAll('.adj-info-badge').forEach(b => b.style.display = 'none');
+    badge.style.display = isShown ? 'none' : 'inline-flex';
 }
 
 // ---------- Export Menu Dropdown Handler ----------
@@ -1475,10 +1477,11 @@ function renderDrawerInputs() {
     if (adminMemberSelect) {
         const prevSelected = adminMemberSelect.value;
         populateSelect(adminMemberSelect, memberNames, "👤 মেম্বার নির্বাচন করুন");
-        if (prevSelected !== "" && state.members[prevSelected]) {
+        // Restore previous selection if it's still valid
+        if (prevSelected && state.members.some(m => m.name === prevSelected)) {
             adminMemberSelect.value = prevSelected;
         } else if (state.members.length > 0) {
-            adminMemberSelect.value = "0"; // auto-select first member
+            adminMemberSelect.value = state.members[0].name; // auto-select first member
         }
         renderMemberEditForm();
     }
@@ -1502,8 +1505,10 @@ function renderMemberEditForm() {
     const badgeEl = $('memberSelectorBadge');
     if (!adminMemberSelect || !container) return;
 
-    const selectedIdx = adminMemberSelect.value;
-    if (selectedIdx === "" || !state.members[selectedIdx]) {
+    const selectedName = adminMemberSelect.value;
+    const memberIdx = state.members.findIndex(m => m.name === selectedName);
+
+    if (selectedName === '' || memberIdx === -1) {
         container.innerHTML = `
             <div style="text-align: center; padding: 24px; color: #64748b; font-size: 13.5px;">
                 👆 উপরে ড্রপডাউন থেকে একজন সদস্য নির্বাচন করুন
@@ -1513,7 +1518,7 @@ function renderMemberEditForm() {
         return;
     }
 
-    const m = state.members[selectedIdx];
+    const m = state.members[memberIdx];
     const prevAdjVal = Number(m.prevAdj || 0);
     const isJanuary = (state.activeMonth === "2026-01");
 
@@ -1574,7 +1579,7 @@ function renderMemberEditForm() {
                 ${prevAdjFieldHtml}
             </div>
 
-            <button class="btn clay-btn clay-btn-primary full-width-btn" onclick="saveSelectedMemberData(${selectedIdx})">
+            <button class="btn clay-btn clay-btn-primary full-width-btn" onclick="saveSelectedMemberData('${selectedName}')">
                 <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
                 ${m.name}-এর ডাটা সেভ করুন
             </button>
@@ -1582,8 +1587,12 @@ function renderMemberEditForm() {
     `;
 }
 
-function saveSelectedMemberData(idx) {
-    const memberName = state.members[idx].name;
+function saveSelectedMemberData(memberName) {
+    const idx = state.members.findIndex(m => m.name === memberName);
+    if (idx === -1) {
+        showToast('সদস্য খুঁজে পাওয়া যায়নি!', 'error');
+        return;
+    }
     state.members[idx].meals = numVal('single_mem_meals');
     state.members[idx].bazarDeposit = numVal('single_mem_bazar');
     state.members[idx].rent = numVal('single_mem_rent');
@@ -1594,6 +1603,7 @@ function saveSelectedMemberData(idx) {
     }
 
     saveData();
+    calculateAll();
     showToast(`${memberName}-এর তথ্য সফলভাবে আপডেট করা হয়েছে!`, "success");
 }
 
