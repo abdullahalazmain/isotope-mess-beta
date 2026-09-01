@@ -1240,6 +1240,35 @@ function renderSummaryTable(totalBazar, totalMeals, mealRate, totalSeatRent, per
     ).join('');
 }
 
+function normalizeMemberName(name) {
+    return String(name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function getMemberTotalDeposit(memberName) {
+    const targetName = normalizeMemberName(memberName);
+    return (state.transactions || []).reduce((sum, t) => {
+        if (normalizeMemberName(t.member) === targetName) {
+            return sum + Number(t.amount || 0);
+        }
+        return sum;
+    }, 0);
+}
+
+function getMemberNetPayableWithoutRent(member, mealRate, perHead) {
+    const utilitiesSum = perHead.elec + perHead.gas + perHead.water + perHead.wifi + perHead.khala + perHead.waste;
+    const mealExpense = Number((Number(member.meals || 0) * mealRate).toFixed(2));
+    const totalExpenseExceptRent = utilitiesSum + mealExpense + Number(member.prevAdj || 0) + Number(member.fridgeAdj || 0);
+    const netPayableWithoutRent = totalExpenseExceptRent - Number(member.bazarDeposit || 0);
+    return Number(netPayableWithoutRent.toFixed(2));
+}
+
+function getMemberNetPayableWithRent(member, mealRate, perHead) {
+    const withoutRent = getMemberNetPayableWithoutRent(member, mealRate, perHead);
+    const rent = Number(member.rent || 0);
+    const totalDeposit = getMemberTotalDeposit(member.name);
+    return Number(((withoutRent + rent) - totalDeposit).toFixed(2));
+}
+
 function renderTransposedTable(mealRate, perHead) {
     const table = document.querySelector('.horizontal-table');
     const memberTbody = $('memberTableBody');
@@ -1250,12 +1279,6 @@ function renderTransposedTable(mealRate, perHead) {
         thead.innerHTML = `<tr><th style="min-width: 190px;">আইটেম / সদস্য</th>` +
             state.members.map(m => `<th class="text-right">${m.name}</th>`).join('') + `</tr>`;
     }
-
-    const depositByMember = new Map();
-    state.transactions.forEach(t => {
-        const name = t.member;
-        depositByMember.set(name, (depositByMember.get(name) || 0) + Number(t.amount || 0));
-    });
 
     const rowConfig = [
         { label: 'কারেন্ট বিল (BDT)', calc: () => perHead.elec.toFixed(2) },
@@ -1297,8 +1320,8 @@ function renderTransposedTable(mealRate, perHead) {
             const mealExpense = Number((mealsNum * mealRate).toFixed(2));
             const totalExpenseExceptRent = utilitiesSum + mealExpense + prevNum + fridgeNum;
             const netPayableWithoutRent = totalExpenseExceptRent - bazarNum;
-            const memberTotalDeposit = depositByMember.get(m.name) || 0;
-            const totalNetPayableWithRent = (netPayableWithoutRent + rentNum) - memberTotalDeposit;
+            const memberTotalDeposit = getMemberTotalDeposit(m.name);
+            const totalNetPayableWithRent = getMemberNetPayableWithRent(m, mealRate, perHead);
 
             if (r.isTotalExp) html += `<td class="text-right font-bold">${bdt(totalExpenseExceptRent)}</td>`;
             else if (r.isDeposit) html += `<td class="text-right font-bold text-green">${bdt(bazarNum)}</td>`;
@@ -1822,12 +1845,12 @@ function exportMultiSheetExcel() {
         { label: 'বাজার জমা (BDT)', fn: m => m.bazarDeposit },
         { label: 'সিট ভাড়া (BDT)', fn: m => m.rent },
         { label: 'সর্বমোট জমা (BDT)', fn: m => {
-            return state.transactions.filter(t => t.member === m.name).reduce((s, t) => s + Number(t.amount || 0), 0).toFixed(2);
+            return getMemberTotalDeposit(m.name).toFixed(2);
         }},
         { label: 'মোট প্রদেয় / বকেয়া (ভাড়াসহ)', fn: m => {
             const u = fixedPerHead;
             const exp = u + (Number(m.meals || 0) * mealRate) + Number(m.prevAdj || 0) + Number(m.fridgeAdj || 0) - Number(m.bazarDeposit || 0);
-            const dep = state.transactions.filter(t => t.member === m.name).reduce((s, t) => s + Number(t.amount || 0), 0);
+            const dep = getMemberTotalDeposit(m.name);
             return ((exp + Number(m.rent || 0)) - dep).toFixed(2);
         }}
     ];
