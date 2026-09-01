@@ -167,11 +167,183 @@
                     <option value="notice-other">📌 অন্যান্য (ধূসর)</option>
                 </select>
             </div>
-            <button class="btn clay-btn clay-btn-primary full-width-btn" style="margin-top: 14px;" onclick="addNewNotice()">
+        </div>
+        <div class="modal-actions" style="justify-content: flex-end; gap: 10px;">
+            <button class="btn clay-btn" onclick="closeNoticeModal()">বাতিল</button>
+            <button class="btn clay-btn clay-btn-primary" onclick="addNewNotice()">
                 <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                নোটিশ যোগ করুন
+                নোটিশ যুক্ত করুন
             </button>
-            <div id="noticeModalList" style="margin-top: 16px; max-height: 260px; overflow-y: auto;"></div>
+        </div>
+        <div id="noticeModalList" style="margin-top: 14px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+</div>
+
+<!-- Member Management Modal -->
+<div id="memberManagerModal" class="modal">
+    <div class="modal-content clay-card" style="max-width: 580px; text-align: left;">
+        <div class="admin-modal-header">
+            <div class="admin-modal-title">
+                <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                <h3>মেম্বার ম্যানেজমেন্ট কন্ট্রোল</h3>
+            </div>
+            <button class="modal-close-btn" onclick="closeMemberManagerModal()" title="বন্ধ করুন">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+
+        <!-- Tabs Header -->
+        <div class="mgr-tab-bar">
+            <button id="tabBtnMemberList" class="mgr-tab-btn active-tab" onclick="showMemberTab('list')">
+                👥 সদস্যদের তালিকা
+            </button>
+            <button id="tabBtnMemberAdd" class="mgr-tab-btn" onclick="showMemberTab('add')">
+                ➕ নতুন মেম্বার যুক্ত করুন
+            </button>
+        </div>
+
+        <!-- Tab 1: Member List -->
+        <div id="memberTabList" style="margin-top: 14px;">
+            <div id="memberManagerListContainer" style="max-height: 380px; overflow-y: auto; padding-right: 4px;"></div>
+        </div>
+
+        <!-- Tab 2: Add Member Form -->
+        <div id="memberTabAdd" style="display: none; margin-top: 14px;">
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label>👤 সদস্যের পুরো নাম:</label>
+                <input type="text" id="newMemberName" class="drawer-input" placeholder="যেমন: তানভীর হাসান">
+            </div>
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label>📅 যোগদানের মাস (Join Month):</label>
+                <select id="newMemberJoinMonth" class="drawer-input">
+                    <option value="2026-01">জানুয়ারি ২০২৬</option>
+                    <option value="2026-02">ফেব্রুয়ারি ২০২৬</option>
+                    <option value="2026-03">মার্চ ২০২৬</option>
+                    <option value="2026-04">এপ্রিল ২০২৬</option>
+                    <option value="2026-05">মে ২০২৬</option>
+                    <option value="2026-06">জুন ২০২৬</option>
+                    <option value="2026-07">জুলাই ২০২৬</option>
+                    <option value="2026-08">আগস্ট ২০২৬</option>
+                    <option value="2026-09">সেপ্টেম্বর ২০২৬</option>
+                    <option value="2026-10">অক্টোবর ২০২৬</option>
+                    <option value="2026-11">নভেম্বর ২০২৬</option>
+                    <option value="2026-12">ডিসেম্বর ২০২৬</option>
+                </select>
+                <small style="color:#64748b; font-size:11px; margin-top:2px; display:block;">যে মাস সিলেক্ট করবেন সে মাস থেকে তার আইডি ও হিসাব শুরু হবে।</small>
+            </div>
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label>🏠 ডিফল্ট সিট ভাড়া (BDT):</label>
+                <input type="number" id="newMemberRent" class="drawer-input" placeholder="যেমন: 2000">
+            </div>
+            <div class="input-group" style="margin-bottom: 16px;">
+                <label>📞 মোবাইল নম্বর (ঐচ্ছিক):</label>
+                <input type="text" id="newMemberPhone" class="drawer-input" placeholder="যেমন: 017xxxxxxxx">
+            </div>
+
+            <button class="btn clay-btn clay-btn-primary full-width-btn" onclick="submitAddNewMember()">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                মেম্বার সেভ করুন
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Remove Member Modal -->
+<div id="removeMemberModal" class="modal">
+    <div class="modal-content clay-card" style="max-width: 440px; text-align: left;">
+        <div class="admin-modal-header">
+            <div class="admin-modal-title">
+                <svg class="svg-icon" style="fill:#dc2626;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <h3 style="color:#dc2626;">মেম্বার রিলিজ / রিমুভ</h3>
+            </div>
+            <button class="modal-close-btn" onclick="closeRemoveMemberModal()" title="বন্ধ করুন">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+        <div style="padding: 6px 0;">
+            <p style="font-size: 13.5px; color:#1e293b; margin-bottom: 12px;">
+                সদস্য: <strong id="removeMemberNameLabel" style="color:#2563eb;">-</strong>
+            </p>
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label>🚪 মেস ত্যাগের মাস (Leaving Month):</label>
+                <select id="removeMemberLeaveMonth" class="drawer-input">
+                    <option value="2026-01">জানুয়ারি ২০২৬</option>
+                    <option value="2026-02">ফেব্রুয়ারি ২০২৬</option>
+                    <option value="2026-03">মার্চ ২০২৬</option>
+                    <option value="2026-04">এপ্রিল ২০২৬</option>
+                    <option value="2026-05">মে ২০২৬</option>
+                    <option value="2026-06">জুন ২০২৬</option>
+                    <option value="2026-07">জুলাই ২০২৬</option>
+                    <option value="2026-08">আগস্ট ২০২৬</option>
+                    <option value="2026-09">সেপ্টেম্বর ২০২৬</option>
+                    <option value="2026-10">অক্টোবর ২০২৬</option>
+                    <option value="2026-11">নভেম্বর ২০২৬</option>
+                    <option value="2026-12">ডিসেম্বর ২০২৬</option>
+                </select>
+            </div>
+            <div class="prev-adj-info-box" style="background: rgba(220, 38, 38, 0.06); border-color: rgba(220, 38, 38, 0.2); margin-bottom: 16px;">
+                <span class="prev-adj-info-icon" style="color:#dc2626;">ℹ️</span>
+                <div style="color:#7f1d1d; font-size:11.5px; line-height: 1.4;">
+                    <strong>ডাটা সুরক্ষা নিশ্চয়তা:</strong> নির্বাচিত মাস পর্যন্ত এই সদস্যের হিসাব ও হিস্ট্রি সম্পূর্ণ অক্ষত থাকবে। পরবর্তী মাসগুলো থেকে তিনি হিসাব ও টেবিল থেকে স্বয়ংক্রিয়ভাবে বাদ পড়বেন।
+                </div>
+            </div>
+        </div>
+        <div class="modal-actions" style="justify-content: flex-end; gap: 8px;">
+            <button class="btn clay-btn" onclick="closeRemoveMemberModal()">বাতিল</button>
+            <button class="btn clay-btn clay-btn-danger" onclick="submitRemoveMember()">রিলিজ নিশ্চিত করুন</button>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Year Modal -->
+<div id="resetYearModal" class="modal">
+    <div class="modal-content clay-card" style="max-width: 520px; text-align: left;">
+        <div class="admin-modal-header">
+            <div class="admin-modal-title">
+                <svg class="svg-icon" style="fill:#dc2626;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <h3 style="color:#dc2626;">নতুন বছর শুরু / ডাটা রিসেট</h3>
+            </div>
+            <button class="modal-close-btn" onclick="closeResetYearModal()" title="বন্ধ করুন">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+        <div style="padding: 4px 0;">
+            <div class="prev-adj-info-box" style="background: rgba(220, 38, 38, 0.06); border-color: rgba(220, 38, 38, 0.2); margin-bottom: 14px;">
+                <span class="prev-adj-info-icon" style="color:#dc2626;">⚠️</span>
+                <div style="color:#7f1d1d; font-size:12px; line-height: 1.4;">
+                    <strong>সতর্কতা:</strong> এটি চলতি বছরের সকল মাসের মিল, জমা ও ট্রানজেকশন ক্লিয়ার করে নতুন বছরের জন্য ডাটাবেস প্রস্তুত করবে। মেম্বার প্রোফাইল ও এডমিন পাসওয়ার্ড অপরিবর্তিত থাকবে।
+                </div>
+            </div>
+
+            <div style="background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #cbd5e1; margin-bottom:14px;">
+                <label style="font-size:12.5px; font-weight:700; color:#1e293b; display:block; margin-bottom:8px;">ধাপ ১: বাধ্যতামূলক ব্যাকআপ ডাউনলোড করুন</label>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn clay-btn" style="flex:1; font-size:12px;" onclick="downloadResetBackup('excel')">
+                        📊 Excel ব্যাকআপ
+                    </button>
+                    <button class="btn clay-btn" style="flex:1; font-size:12px;" onclick="downloadResetBackup('json')">
+                        📁 JSON ব্যাকআপ
+                    </button>
+                </div>
+                <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" id="resetBackupCheckbox" style="width:16px; height:16px; cursor:pointer;">
+                    <label for="resetBackupCheckbox" style="font-size:12px; color:#334155; cursor:pointer;">আমি ব্যাকআপ ফাইল ডাউনলোড ও সংরক্ষণ করেছি</label>
+                </div>
+            </div>
+
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label>ধাপ ২: এডমিন পাসওয়ার্ড দিন:</label>
+                <input type="password" id="resetYearAdminPass" class="drawer-input" placeholder="এডমিন পাসওয়ার্ড...">
+            </div>
+
+            <div class="input-group" style="margin-bottom: 16px;">
+                <label>ধাপ ৩: নিশ্চিত করতে 'RESET 2026' লিখুন:</label>
+                <input type="text" id="resetYearConfirmCode" class="drawer-input" placeholder="RESET 2026">
+            </div>
+        </div>
+        <div class="modal-actions" style="justify-content: flex-end; gap: 8px;">
+            <button class="btn clay-btn" onclick="closeResetYearModal()">বাতিল</button>
+            <button class="btn clay-btn clay-btn-danger" onclick="submitResetYear()">রিসেট সম্পন্ন করুন</button>
         </div>
     </div>
 </div>
@@ -512,26 +684,61 @@
     <!-- Admin Page Grid (3 Columns on Desktop) -->
     <div class="admin-page-grid">
 
-        <!-- Column 1: Left (Deposit Entry + Notice Board) -->
+        <!-- Column 1: Left (Deposit Entry + Notice Board + Member Control + Reset Year) -->
         <div class="admin-grid-col admin-col-left">
-            <!-- Card 1: Deposit Entry -->
-            <div class="clay-card admin-page-card admin-action-card">
-                <div class="card-title">
-                    <span class="title-with-icon">
-                        <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
-                        মেম্বার ডিপোজিট এন্ট্রি
-                    </span>
+            <!-- Left Sub-Column: Deposit, Member Control, Reset Year -->
+            <div class="admin-col-left-sub">
+                <!-- Card 1: Deposit Entry -->
+                <div class="clay-card admin-page-card admin-action-card" style="order:1;">
+                    <div class="card-title">
+                        <span class="title-with-icon">
+                            <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                            মেম্বার ডিপোজিট এন্ট্রি
+                        </span>
+                    </div>
+                    <div class="admin-action-body">
+                        <button class="admin-action-btn" onclick="openDepositModal()">
+                            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                            <span>নতুন ডিপোজিট এন্ট্রি</span>
+                        </button>
+                    </div>
                 </div>
-                <div class="admin-action-body">
-                    <button class="admin-action-btn" onclick="openDepositModal()">
-                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                        <span>নতুন ডিপোজিট এন্ট্রি</span>
-                    </button>
+
+                <!-- Card 3: Member Management Control -->
+                <div class="clay-card admin-page-card admin-action-card" style="order:5;">
+                    <div class="card-title">
+                        <span class="title-with-icon">
+                            <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                            মেম্বার কন্ট্রোল
+                        </span>
+                    </div>
+                    <div class="admin-action-body">
+                        <button class="admin-action-btn admin-action-btn--member" onclick="openMemberManagerModal()">
+                            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            <span>মেম্বার অ্যাড / রিমুভ</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Card 4: Reset Year -->
+                <div class="clay-card admin-page-card admin-action-card" style="order:6;">
+                    <div class="card-title">
+                        <span class="title-with-icon" style="color: #dc2626;">
+                            <svg class="svg-icon" style="fill:#dc2626;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            নতুন বছর শুরু
+                        </span>
+                    </div>
+                    <div class="admin-action-body">
+                        <button class="admin-action-btn admin-action-btn--danger" onclick="openResetYearModal()">
+                            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                            <span>Reset Year (ডাটা রিসেট)</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Card 2: Notice Board Manager -->
-            <div class="clay-card admin-page-card admin-action-card" style="margin-top: 16px;">
+            <!-- Right Sub-Column: Notice Board Manager -->
+            <div class="clay-card admin-page-card admin-action-card admin-notice-full-card" style="order:4;">
                 <div class="card-title">
                     <span class="title-with-icon">
                         <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z"/></svg>
@@ -549,8 +756,8 @@
         </div>
 
         <!-- Column 2: Center (Utility & Fixed Costs) -->
-        <div class="admin-grid-col admin-col-mid">
-            <div class="clay-card admin-page-card">
+        <div class="admin-grid-col admin-col-mid" style="order:2;">
+            <div class="clay-card admin-page-card" style="order:2;">
                 <div class="card-title">
                     <span class="title-with-icon">
                         <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
@@ -566,8 +773,8 @@
         </div>
 
         <!-- Column 3: Right (Member Meals & Adjustment) -->
-        <div class="admin-grid-col admin-col-right">
-            <div class="clay-card admin-page-card">
+        <div class="admin-grid-col admin-col-right" style="order:3;">
+            <div class="clay-card admin-page-card" style="order:3;">
                 <div class="card-title">
                     <span class="title-with-icon">
                         <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
