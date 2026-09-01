@@ -990,7 +990,7 @@ function calculatePrevMonthBalanceForMember(mKey, memberName) {
     const rawMealRate = totalMeals > 0 ? (totalBazar / totalMeals) : 0;
     const mealRate = Math.round(rawMealRate * 100) / 100;
 
-    const mem = prevData.members.find(m => m.name === memberName);
+    const mem = prevData.members.find(m => normalizeMemberName(m.name) === normalizeMemberName(memberName));
     if (!mem) return 0;
 
     const mealsNum = Number(mem.meals || 0);
@@ -1004,7 +1004,7 @@ function calculatePrevMonthBalanceForMember(mKey, memberName) {
     const netPayableWithoutRent = totalExpenseExceptRent - bazarNum;
 
     const memberTotalDeposit = (prevData.transactions || [])
-        .filter(t => t.member === memberName)
+        .filter(t => normalizeMemberName(t.member) === normalizeMemberName(memberName))
         .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
     const totalNetPayableWithRent = (netPayableWithoutRent + rentNum) - memberTotalDeposit;
@@ -1994,7 +1994,7 @@ function exportCSV() {
         },
         {
             label: 'মেস ফান্ডে জমা (BDT)', fn: m => {
-                let totalDep = state.transactions.filter(t => t.member === m.name).reduce((s, t) => s + Number(t.amount || 0), 0);
+                let totalDep = getMemberTotalDeposit(m.name);
                 return totalDep.toFixed(2);
             }
         },
@@ -2005,7 +2005,7 @@ function exportCSV() {
                 let prev = Number(m.prevAdj || 0);
                 let rent = Number(m.rent || 0);
                 let totalDue = mealCost + fixedPerHeadTotal + other + prev + rent;
-                let totalDep = state.transactions.filter(t => t.member === m.name).reduce((s, t) => s + Number(t.amount || 0), 0);
+                let totalDep = getMemberTotalDeposit(m.name);
                 let net = totalDue - totalDep;
                 return (net > 0 ? `+${net.toFixed(2)} (বকেয়া)` : net < 0 ? `-${Math.abs(net).toFixed(2)} (ফেরত)` : `0.00`);
             }
