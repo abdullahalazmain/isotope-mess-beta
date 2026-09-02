@@ -56,46 +56,55 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
-  if (!request || typeof request.url !== 'string') return;
+  if (!request || request.method !== 'GET') return;
 
-  const url = new URL(request.url);
+  try {
+    const url = new URL(request.url);
 
-  // Skip non-GET requests and browser-extension / unsupported schemes.
-  if (request.method !== 'GET') return;
-  if (!['http:', 'https:'].includes(url.protocol)) return;
+    const isUnsupportedScheme = ['chrome-extension:', 'chrome:', 'moz-extension:', 'about:', 'data:'].includes(url.protocol);
+    const isHttpLike = url.protocol === 'http:' || url.protocol === 'https:';
 
-  // For Firebase / external CDN requests: network only (don't cache)
-  if (
-    url.hostname.includes('firebase') ||
-    url.hostname.includes('gstatic.com') ||
-    url.hostname.includes('googleapis.com') ||
-    url.hostname.includes('google.com')
-  ) {
-    return; // Let the browser handle it normally
-  }
+    if (isUnsupportedScheme || !isHttpLike) return;
 
-  // Network-First for core web files (HTML, JS, CSS, JSON)
-  event.respondWith(
-    fetch(request)
-      .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
-        }
-        return networkResponse;
-      })
-      .catch(() => {
-        // Offline fallback from cache
-        return caches.match(request).then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse;
-          if (request.headers.get('accept') && request.headers.get('accept').includes('text/html')) {
-            return caches.match('/index.html');
+    // For Firebase / external CDN requests: network only (don't cache)
+    if (
+      url.hostname.includes('firebase') ||
+      url.hostname.includes('gstatic.com') ||
+      url.hostname.includes('googleapis.com') ||
+      url.hostname.includes('google.com')
+    ) {
+      return;
+    }
+
+    // Network-First for core web files (HTML, JS, CSS, JSON)
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              try {
+                cache.put(request, responseToCache);
+              } catch (cacheError) {
+                console.warn('[SW] Cache put skipped for unsupported request:', request.url, cacheError);
+              }
+            });
           }
-        });
-      })
-  );
+          return networkResponse;
+        })
+        .catch(() => {
+          // Offline fallback from cache
+          return caches.match(request).then((cachedResponse) => {
+            if (cachedResponse) return cachedResponse;
+            if (request.headers.get('accept') && request.headers.get('accept').includes('text/html')) {
+              return caches.match('/index.html');
+            }
+          });
+        })
+    );
+  } catch (error) {
+    console.warn('[SW] Skipping invalid request in fetch handler:', error);
+  }
 });
 
 // =====================

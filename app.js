@@ -6,6 +6,7 @@
 
 // ---------- Constants ----------
 const FIREBASE_FIRESTORE_URL = "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+const FIRESTORE_SCHEMA_VERSION = "3.1";
 const DEFAULT_ADMIN_PASSWORD = "@12azmain";
 const LEGACY_ADMIN_PASSWORDS = ["@12azmain", "isotope@123"];
 const DEFAULT_CUSTOM_ADJ_LABEL = "অন্যান্য";
@@ -13,7 +14,6 @@ const CURRENT_YEAR = 2026;
 const DEFAULT_ACTIVE_MONTH_KEY = "2026-06";
 const DEFAULT_MESS_ID = "ISO-MESS-2026-06";
 const MESS_ID = DEFAULT_MESS_ID;
-const FIRESTORE_SCHEMA_VERSION = "3.1";
 
 function generateIsotopeId(prefix = "GEN") {
     const stamp = Date.now().toString(36).toUpperCase();
