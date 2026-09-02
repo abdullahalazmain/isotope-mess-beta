@@ -1013,10 +1013,10 @@ async function loadMonthDataFromFirestore(mKey) {
         if (!fixedLoaded) {
             if (state.months && state.months[mKey] && state.months[mKey].fixedCosts) {
                 state.fixedCosts = { ...state.months[mKey].fixedCosts };
-                state.customAdjLabel = state.months[mKey].customAdjLabel || "ফ্রিজ ও অন্যান্য";
+                state.customAdjLabel = state.months[mKey].customAdjLabel || DEFAULT_CUSTOM_ADJ_LABEL;
             } else {
                 state.fixedCosts = { ...createEmptyMonthData(mKey).fixedCosts };
-                state.customAdjLabel = "ফ্রিজ ও অন্যান্য";
+                state.customAdjLabel = DEFAULT_CUSTOM_ADJ_LABEL;
             }
         }
 
@@ -1590,7 +1590,7 @@ function switchMonth(targetMonthKey) {
 
     const mData = state.months[targetMonthKey];
     state.fixedCosts = { ...mData.fixedCosts };
-    state.customAdjLabel = mData.customAdjLabel || "ফ্রিজ ও অন্যান্য";
+    state.customAdjLabel = mData.customAdjLabel || DEFAULT_CUSTOM_ADJ_LABEL;
     state.members = mData.members.map(m => ({ ...m }));
     state.notices = mData.notices.map(n => ({ ...n }));
     state.transactions = mData.transactions.map(t => ({ ...t }));
