@@ -10,8 +10,9 @@ const FIRESTORE_SCHEMA_VERSION = "3.1";
 const DEFAULT_ADMIN_PASSWORD = "@12azmain";
 const LEGACY_ADMIN_PASSWORDS = ["@12azmain", "isotope@123"];
 const DEFAULT_CUSTOM_ADJ_LABEL = "অন্যান্য";
-const CURRENT_YEAR = 2026;
-const DEFAULT_ACTIVE_MONTH_KEY = "2026-06";
+const CURRENT_DATE = new Date();
+const CURRENT_YEAR = CURRENT_DATE.getFullYear();
+const DEFAULT_ACTIVE_MONTH_KEY = `${CURRENT_YEAR}-${String(CURRENT_DATE.getMonth() + 1).padStart(2, '0')}`;
 const DEFAULT_MESS_ID = "ISO-MESS-2026-06";
 const MESS_ID = DEFAULT_MESS_ID;
 
@@ -957,10 +958,7 @@ async function loadFromFirestore() {
             console.warn("Firebase members registry load warning:", err);
         }
 
-        for (let month = 1; month <= 12; month++) {
-            const monthKey = `${CURRENT_YEAR}-${String(month).padStart(2, '0')}`;
-            await loadMonthDataFromFirestore(monthKey);
-        }
+        await loadAllMonthsFromFirestore(basePath);
         await loadMonthDataFromFirestore(state.activeMonth);
         recalculateAllPreviousMonthBalances();
 
@@ -970,6 +968,31 @@ async function loadFromFirestore() {
     } catch (e) {
         console.error("Firebase initial load error:", e);
     }
+}
+
+async function loadAllMonthsFromFirestore(basePath) {
+    const { doc, getDoc } = await getFirestoreModule();
+    const monthKeys = Array.from({ length: 12 }, (_, index) => `${CURRENT_YEAR}-${String(index + 1).padStart(2, '0')}`);
+    const monthResults = await Promise.all(monthKeys.map(async monthKey => {
+        try {
+            const monthSnap = await getDoc(doc(window.firebaseDb, ...basePath, "messes", MESS_ID, "months", monthKey));
+            return { monthKey, data: monthSnap.exists() ? monthSnap.data() : null };
+        } catch (err) {
+            console.warn(`Firebase month preload warning (${monthKey}):`, err);
+            return { monthKey, data: null };
+        }
+    }));
+
+    monthResults.forEach(({ monthKey, data }) => {
+        if (!data) return;
+        state.months[monthKey] = {
+            fixedCosts: { ...createEmptyMonthData(monthKey).fixedCosts, ...(data.fixedCosts || {}) },
+            customAdjLabel: data.customAdjLabel || DEFAULT_CUSTOM_ADJ_LABEL,
+            members: Array.isArray(data.members) ? data.members.map(member => ({ ...member })) : [],
+            notices: Array.isArray(data.notices) ? data.notices.map(notice => ({ ...notice })) : [],
+            transactions: Array.isArray(data.transactions) ? data.transactions.map(transaction => ({ ...transaction })) : []
+        };
+    });
 }
 
 async function loadMonthDataFromFirestore(mKey) {
