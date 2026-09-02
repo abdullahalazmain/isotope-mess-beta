@@ -6,6 +6,7 @@
 
 // ---------- Constants ----------
 const FIREBASE_FIRESTORE_URL = "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+const FIRESTORE_SCHEMA_VERSION = "3.1";
 const DEFAULT_ADMIN_PASSWORD = "@12azmain";
 const LEGACY_ADMIN_PASSWORDS = ["@12azmain", "isotope@123"];
 const DEFAULT_CUSTOM_ADJ_LABEL = "অন্যান্য";
@@ -223,12 +224,12 @@ function getCurrentResetYear() {
 }
 
 // ---------- State ----------
-const emptyStartMonth = createEmptyMonthData("2026-01");
+const emptyStartMonth = createEmptyMonthData(DEFAULT_ACTIVE_MONTH_KEY);
 state = {
     isAdmin: false,
     adminPassword: DEFAULT_ADMIN_PASSWORD,
     customAdjLabel: DEFAULT_CUSTOM_ADJ_LABEL,
-    activeMonth: "2026-01",
+    activeMonth: DEFAULT_ACTIVE_MONTH_KEY,
     masterMembers: [],
     months: createInitialMonthsData(CURRENT_YEAR),
     // Active month view mirrors:
@@ -240,7 +241,6 @@ state = {
 
 let confirmCallback = null;
 let firestoreModuleCache = null;
-const FIRESTORE_SCHEMA_VERSION = "3.1";
 
 async function resetFirestoreDatabase() {
     if (!window.firebaseDb) {
