@@ -33,22 +33,23 @@ const AUGUST_FIXED_COSTS = {
 };
 
 // Initial Master Members Registry with Professional Dynamic IDs (e.g. ISO-202601-001)
+// Default values should be blank/zero until the admin assigns them manually.
 const INITIAL_MASTER_MEMBERS = [
-    { id: "ISO-202601-001", name: "আজমাইন", joinMonth: "2026-01", leaveMonth: null, defaultRent: 2200, phone: "", isActive: true },
-    { id: "ISO-202601-002", name: "রিয়াজ", joinMonth: "2026-01", leaveMonth: null, defaultRent: 2200, phone: "", isActive: true },
-    { id: "ISO-202601-003", name: "সাকিব", joinMonth: "2026-01", leaveMonth: null, defaultRent: 2000, phone: "", isActive: true },
-    { id: "ISO-202601-004", name: "ওমর", joinMonth: "2026-01", leaveMonth: null, defaultRent: 2000, phone: "", isActive: true },
-    { id: "ISO-202601-005", name: "নাফিজ", joinMonth: "2026-01", leaveMonth: null, defaultRent: 1800, phone: "", isActive: true },
-    { id: "ISO-202601-006", name: "ফারেছ", joinMonth: "2026-01", leaveMonth: null, defaultRent: 1800, phone: "", isActive: true }
+    { id: "ISO-202601-001", name: "আজমাইন", joinMonth: "2026-01", leaveMonth: null, defaultRent: 0, phone: "", isActive: true },
+    { id: "ISO-202601-002", name: "রিয়াজ", joinMonth: "2026-01", leaveMonth: null, defaultRent: 0, phone: "", isActive: true },
+    { id: "ISO-202601-003", name: "সাকিব", joinMonth: "2026-01", leaveMonth: null, defaultRent: 0, phone: "", isActive: true },
+    { id: "ISO-202601-004", name: "ওমর", joinMonth: "2026-01", leaveMonth: null, defaultRent: 0, phone: "", isActive: true },
+    { id: "ISO-202601-005", name: "নাফিজ", joinMonth: "2026-01", leaveMonth: null, defaultRent: 0, phone: "", isActive: true },
+    { id: "ISO-202601-006", name: "ফারেছ", joinMonth: "2026-01", leaveMonth: null, defaultRent: 0, phone: "", isActive: true }
 ];
 
 const AUGUST_MEMBERS = [
-    { id: "ISO-202601-001", name: "আজমাইন", meals: 59, bazarDeposit: 2451, rent: 2200, prevAdj: 96.67, fridgeAdj: -120 },
-    { id: "ISO-202601-002", name: "রিয়াজ", meals: 42, bazarDeposit: 2299, rent: 2200, prevAdj: 96.67, fridgeAdj: -120 },
-    { id: "ISO-202601-003", name: "সাকিব", meals: 5, bazarDeposit: 0, rent: 2000, prevAdj: -140.67, fridgeAdj: 480 },
-    { id: "ISO-202601-004", name: "ওমর", meals: 0, bazarDeposit: 0, rent: 2000, prevAdj: -143.33, fridgeAdj: 0 },
-    { id: "ISO-202601-005", name: "নাফিজ", meals: 53, bazarDeposit: 0, rent: 1800, prevAdj: -472.26, fridgeAdj: -120 },
-    { id: "ISO-202601-006", name: "ফারেছ", meals: 43, bazarDeposit: 3391, rent: 1800, prevAdj: 96.67, fridgeAdj: -120 }
+    { id: "ISO-202601-001", name: "আজমাইন", meals: 0, bazarDeposit: 0, rent: 0, prevAdj: 0, fridgeAdj: 0 },
+    { id: "ISO-202601-002", name: "রিয়াজ", meals: 0, bazarDeposit: 0, rent: 0, prevAdj: 0, fridgeAdj: 0 },
+    { id: "ISO-202601-003", name: "সাকিব", meals: 0, bazarDeposit: 0, rent: 0, prevAdj: 0, fridgeAdj: 0 },
+    { id: "ISO-202601-004", name: "ওমর", meals: 0, bazarDeposit: 0, rent: 0, prevAdj: 0, fridgeAdj: 0 },
+    { id: "ISO-202601-005", name: "নাফিজ", meals: 0, bazarDeposit: 0, rent: 0, prevAdj: 0, fridgeAdj: 0 },
+    { id: "ISO-202601-006", name: "ফারেছ", meals: 0, bazarDeposit: 0, rent: 0, prevAdj: 0, fridgeAdj: 0 }
 ];
 
 const AUGUST_NOTICES = [
@@ -115,23 +116,18 @@ function createEmptyMonthData(monthKey = "2026-08") {
 }
 
 // Initial multi-month dictionary for current year (2026)
+// Start empty and let the admin assign values month-by-month.
 function createInitialMonthsData() {
     const months = {};
     for (let m = 1; m <= 12; m++) {
         const key = `${CURRENT_YEAR}-${String(m).padStart(2, '0')}`;
         months[key] = createEmptyMonthData(key);
     }
-    // Set August real data
-    months["2026-08"] = {
-        fixedCosts: { ...AUGUST_FIXED_COSTS },
-        members: AUGUST_MEMBERS.map(m => ({ ...m })),
-        notices: AUGUST_NOTICES.map(n => ({ ...n })),
-        transactions: AUGUST_TRANSACTIONS.map(t => ({ ...t }))
-    };
     return months;
 }
 
 // ---------- State ----------
+const emptyAugustMonth = createEmptyMonthData("2026-08");
 state = {
     isAdmin: false,
     adminPassword: DEFAULT_ADMIN_PASSWORD,
@@ -140,14 +136,178 @@ state = {
     masterMembers: INITIAL_MASTER_MEMBERS.map(m => ({ ...m })),
     months: createInitialMonthsData(),
     // Active month view mirrors:
-    fixedCosts: { ...AUGUST_FIXED_COSTS },
-    members: AUGUST_MEMBERS.map(m => ({ ...m })),
-    notices: AUGUST_NOTICES.map(n => ({ ...n })),
-    transactions: AUGUST_TRANSACTIONS.map(t => ({ ...t }))
+    fixedCosts: { ...emptyAugustMonth.fixedCosts },
+    members: emptyAugustMonth.members.map(m => ({ ...m })),
+    notices: emptyAugustMonth.notices.map(n => ({ ...n })),
+    transactions: emptyAugustMonth.transactions.map(t => ({ ...t }))
 };
 
 let confirmCallback = null;
 let firestoreModuleCache = null;
+const FIRESTORE_SCHEMA_VERSION = "2.0";
+
+async function resetFirestoreDatabase() {
+    if (!window.firebaseDb) {
+        console.warn("Firebase database not connected. Nothing to clear.");
+        return { cleared: false, reason: "missing-db" };
+    }
+
+    const { collection, getDocs, deleteDoc } = await getFirestoreModule();
+    const deletedPaths = [];
+    const rootCollections = [
+        "appConfig",
+        "messes",
+        "settings",
+        "members",
+        "months",
+        "notices",
+        "transactions",
+        "profiles",
+        "accounts",
+        "auditLogs"
+    ];
+
+    for (const collectionName of rootCollections) {
+        try {
+            const snap = await getDocs(collection(window.firebaseDb, collectionName));
+            for (const docSnap of snap.docs) {
+                await deleteDoc(docSnap.ref);
+                deletedPaths.push(docSnap.ref.path);
+            }
+        } catch (err) {
+            // Collection may not exist yet in a freshly initialized database.
+        }
+    }
+
+    try {
+        const monthSnap = await getDocs(collection(window.firebaseDb, "months"));
+        for (const monthDoc of monthSnap.docs) {
+            const nestedCollections = [
+                "members",
+                "notices",
+                "transactions",
+                "dailyMeals",
+                "dailyBazar",
+                "ledger"
+            ];
+
+            for (const nestedName of nestedCollections) {
+                try {
+                    const nestedSnap = await getDocs(collection(window.firebaseDb, "months", monthDoc.id, nestedName));
+                    for (const nestedDoc of nestedSnap.docs) {
+                        await deleteDoc(nestedDoc.ref);
+                        deletedPaths.push(nestedDoc.ref.path);
+                    }
+                } catch (err) {
+                    // Ignore absent nested collections.
+                }
+            }
+        }
+    } catch (err) {
+        // Ignore absent month tree.
+    }
+
+    return { cleared: true, deletedPaths };
+}
+
+async function bootstrapEmptyFirestoreTree() {
+    if (!window.firebaseDb) {
+        console.warn("Firebase database not connected. Cannot bootstrap empty tree.");
+        return { bootstrapped: false, reason: "missing-db" };
+    }
+
+    const { doc, setDoc } = await getFirestoreModule();
+    const now = new Date().toISOString();
+
+    await setDoc(doc(window.firebaseDb, "appConfig", "schema"), {
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        defaultCurrency: "BDT",
+        defaultLocale: "bn",
+        appName: "Isotope Mess",
+        activeMessId: MESS_ID,
+        status: "empty",
+        createdAt: now,
+        updatedAt: now
+    });
+
+    await setDoc(doc(window.firebaseDb, "messes", MESS_ID), {
+        messId: MESS_ID,
+        name: "Isotope Mess",
+        status: "empty",
+        hasSeedData: false,
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        createdAt: now,
+        updatedAt: now
+    });
+
+    await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "settings", "primary"), {
+        currency: "BDT",
+        locale: "bn",
+        adminPassword: DEFAULT_ADMIN_PASSWORD,
+        customAdjLabel: DEFAULT_CUSTOM_ADJ_LABEL,
+        activeMonth: "2026-01",
+        status: "empty",
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        createdAt: now,
+        updatedAt: now
+    });
+
+    await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "members", "index"), {
+        totalMembers: 0,
+        status: "empty",
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        updatedAt: now
+    });
+
+    await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "months", "index"), {
+        totalMonths: 0,
+        status: "empty",
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        updatedAt: now
+    });
+
+    await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "notices", "index"), {
+        totalNotices: 0,
+        status: "empty",
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        updatedAt: now
+    });
+
+    await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "transactions", "index"), {
+        totalTransactions: 0,
+        status: "empty",
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        updatedAt: now
+    });
+
+    return { bootstrapped: true, schemaVersion: FIRESTORE_SCHEMA_VERSION };
+}
+
+function resetLocalAppStateToEmpty() {
+    const emptyMonth = createEmptyMonthData("2026-01");
+    state.masterMembers = [];
+    state.months = {};
+    state.activeMonth = "2026-01";
+    state.customAdjLabel = DEFAULT_CUSTOM_ADJ_LABEL;
+    state.adminPassword = DEFAULT_ADMIN_PASSWORD;
+    state.fixedCosts = { ...emptyMonth.fixedCosts };
+    state.members = emptyMonth.members.map(m => ({ ...m }));
+    state.notices = [];
+    state.transactions = [];
+    localStorage.setItem('isotope_mess_data_v3', JSON.stringify({
+        masterMembers: [],
+        months: {},
+        activeMonth: "2026-01",
+        adminPassword: DEFAULT_ADMIN_PASSWORD,
+        customAdjLabel: DEFAULT_CUSTOM_ADJ_LABEL,
+        version: "3.0"
+    }));
+    return true;
+}
+
+window.resetFirestoreDatabase = resetFirestoreDatabase;
+window.bootstrapEmptyFirestoreTree = bootstrapEmptyFirestoreTree;
+window.resetLocalAppStateToEmpty = resetLocalAppStateToEmpty;
 
 // ---------- DOM Helpers ----------
 const $ = id => document.getElementById(id);
@@ -253,50 +413,81 @@ async function saveData() {
     try {
         const { doc, setDoc } = await getFirestoreModule();
         const mKey = state.activeMonth;
+        const messRef = doc(window.firebaseDb, "messes", MESS_ID);
+        const settingsRef = doc(window.firebaseDb, "messes", MESS_ID, "settings", "primary");
+        const registryRef = doc(window.firebaseDb, "messes", MESS_ID, "members", "registry");
+        const monthRef = doc(window.firebaseDb, "messes", MESS_ID, "months", mKey);
+        const fixedRef = doc(window.firebaseDb, "messes", MESS_ID, "months", mKey, "meta", "fixedCosts");
+        const now = new Date().toISOString();
 
-        // 1. Global config & master members registry
-        await setDoc(doc(window.firebaseDb, "settings", "config"), {
+        await setDoc(messRef, {
+            messId: MESS_ID,
+            name: "Isotope Mess",
+            status: "active",
+            hasSeedData: state.masterMembers.length > 0 || state.members.length > 0,
+            schemaVersion: FIRESTORE_SCHEMA_VERSION,
+            updatedAt: now
+        }, { merge: true });
+
+        await setDoc(settingsRef, {
+            currency: "BDT",
+            locale: "bn",
             adminPassword: state.adminPassword || DEFAULT_ADMIN_PASSWORD,
             activeMonth: state.activeMonth,
             customAdjLabel: state.customAdjLabel || DEFAULT_CUSTOM_ADJ_LABEL,
             messId: MESS_ID,
             version: "3.0",
-            updatedAt: new Date().toISOString()
-        });
+            schemaVersion: FIRESTORE_SCHEMA_VERSION,
+            updatedAt: now
+        }, { merge: true });
 
-        await setDoc(doc(window.firebaseDb, "members", "master"), {
+        await setDoc(registryRef, {
             list: state.masterMembers,
-            updatedAt: new Date().toISOString()
-        });
+            totalMembers: state.masterMembers.length,
+            updatedAt: now
+        }, { merge: true });
 
-        // 2. Atomic Month Document Store (Instant 1-Read fast load)
-        await setDoc(doc(window.firebaseDb, "months", mKey), {
+        await setDoc(monthRef, {
             monthKey: mKey,
             fixedCosts: { ...state.fixedCosts },
             customAdjLabel: state.customAdjLabel || DEFAULT_CUSTOM_ADJ_LABEL,
             members: state.members,
             notices: state.notices,
             transactions: state.transactions,
-            updatedAt: new Date().toISOString()
-        });
+            schemaVersion: FIRESTORE_SCHEMA_VERSION,
+            updatedAt: now
+        }, { merge: true });
 
-        // 3. Month-scoped subcollection (for backward compatibility)
-        await setDoc(doc(window.firebaseDb, "months", mKey, "data", "fixedCosts"), {
+        await setDoc(fixedRef, {
             ...state.fixedCosts,
-            customAdjLabel: state.customAdjLabel || "ফ্রিজ ও অন্যান্য"
-        });
+            customAdjLabel: state.customAdjLabel || "ফ্রিজ ও অন্যান্য",
+            schemaVersion: FIRESTORE_SCHEMA_VERSION,
+            updatedAt: now
+        }, { merge: true });
 
         for (let member of state.members) {
-            const docId = member.name.replace(/\s+/g, '_');
-            await setDoc(doc(window.firebaseDb, "months", mKey, "members", docId), member);
+            const docId = (member.id || member.name || "member").replace(/\s+/g, '_');
+            await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "months", mKey, "members", docId), {
+                ...member,
+                schemaVersion: FIRESTORE_SCHEMA_VERSION,
+                updatedAt: now
+            }, { merge: true });
         }
 
         for (let notice of state.notices) {
-            await setDoc(doc(window.firebaseDb, "months", mKey, "notices", String(notice.id)), notice);
+            await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "months", mKey, "notices", String(notice.id)), {
+                ...notice,
+                schemaVersion: FIRESTORE_SCHEMA_VERSION,
+                updatedAt: now
+            }, { merge: true });
         }
 
         for (let txn of state.transactions) {
-            await setDoc(doc(window.firebaseDb, "months", mKey, "transactions", String(txn.id)), txn);
+            await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "months", mKey, "transactions", String(txn.id)), {
+                ...txn,
+                schemaVersion: FIRESTORE_SCHEMA_VERSION,
+                updatedAt: now
+            }, { merge: true });
         }
     } catch (e) {
         console.error("Firebase save error:", e);
@@ -308,9 +499,8 @@ async function loadFromFirestore() {
     try {
         const { doc, getDoc } = await getFirestoreModule();
 
-        // 1. Load global config
         try {
-            const configSnap = await getDoc(doc(window.firebaseDb, "settings", "config"));
+            const configSnap = await getDoc(doc(window.firebaseDb, "messes", MESS_ID, "settings", "primary"));
             if (configSnap && configSnap.exists()) {
                 const configData = configSnap.data();
                 if (configData.adminPassword) state.adminPassword = configData.adminPassword;
@@ -318,20 +508,18 @@ async function loadFromFirestore() {
                 if (configData.customAdjLabel) state.customAdjLabel = configData.customAdjLabel;
             }
         } catch (err) {
-            console.warn("Firebase config load warning:", err);
+            console.warn("Firebase mess config load warning:", err);
         }
 
-        // 2. Load Master Members Registry
         try {
-            const masterSnap = await getDoc(doc(window.firebaseDb, "members", "master"));
-            if (masterSnap && masterSnap.exists() && masterSnap.data().list) {
-                state.masterMembers = masterSnap.data().list;
+            const registrySnap = await getDoc(doc(window.firebaseDb, "messes", MESS_ID, "members", "registry"));
+            if (registrySnap && registrySnap.exists() && Array.isArray(registrySnap.data().list)) {
+                state.masterMembers = registrySnap.data().list;
             }
         } catch (err) {
-            console.warn("Firebase master members load warning:", err);
+            console.warn("Firebase members registry load warning:", err);
         }
 
-        // 3. Load active month data
         await loadMonthDataFromFirestore(state.activeMonth);
 
         updateMonthDisplayUI();
@@ -347,16 +535,15 @@ async function loadMonthDataFromFirestore(mKey) {
     try {
         const { doc, getDoc, collection, getDocs } = await getFirestoreModule();
 
-        // Layer 1: Check Atomic Month Doc first (fastest single-read)
         try {
-            const monthSnap = await getDoc(doc(window.firebaseDb, "months", mKey));
+            const monthSnap = await getDoc(doc(window.firebaseDb, "messes", MESS_ID, "months", mKey));
             if (monthSnap && monthSnap.exists()) {
                 const mDocData = monthSnap.data();
                 if (mDocData.fixedCosts) state.fixedCosts = { ...mDocData.fixedCosts };
                 if (mDocData.customAdjLabel) state.customAdjLabel = mDocData.customAdjLabel;
-                if (mDocData.members && mDocData.members.length > 0) state.members = mDocData.members;
-                if (mDocData.notices) state.notices = mDocData.notices;
-                if (mDocData.transactions) state.transactions = mDocData.transactions;
+                if (Array.isArray(mDocData.members) && mDocData.members.length > 0) state.members = mDocData.members;
+                if (Array.isArray(mDocData.notices)) state.notices = mDocData.notices;
+                if (Array.isArray(mDocData.transactions)) state.transactions = mDocData.transactions;
 
                 if (!state.months) state.months = {};
                 state.months[mKey] = {
@@ -369,13 +556,12 @@ async function loadMonthDataFromFirestore(mKey) {
                 return;
             }
         } catch (err) {
-            console.warn(`Atomic month doc read for ${mKey}:`, err);
+            console.warn(`Mess month doc read for ${mKey}:`, err);
         }
 
-        // Layer 2: Fixed costs & custom adjustment label (subcollection & root fallback)
         let fixedLoaded = false;
         try {
-            const fixedSnap = await getDoc(doc(window.firebaseDb, "months", mKey, "data", "fixedCosts"));
+            const fixedSnap = await getDoc(doc(window.firebaseDb, "messes", MESS_ID, "months", mKey, "meta", "fixedCosts"));
             if (fixedSnap && fixedSnap.exists()) {
                 const fData = fixedSnap.data();
                 state.fixedCosts = { ...fData };
@@ -383,23 +569,7 @@ async function loadMonthDataFromFirestore(mKey) {
                 fixedLoaded = true;
             }
         } catch (err) {
-            console.warn(`Firebase fixedCosts month load warning (${mKey}):`, err);
-        }
-
-        if (!fixedLoaded) {
-            try {
-                const configSnap = await getDoc(doc(window.firebaseDb, "settings", "config"));
-                if (configSnap && configSnap.exists()) {
-                    const cfg = configSnap.data();
-                    if (cfg.fixedCosts) {
-                        state.fixedCosts = { ...state.fixedCosts, ...cfg.fixedCosts };
-                        fixedLoaded = true;
-                    }
-                    if (cfg.customAdjLabel) state.customAdjLabel = cfg.customAdjLabel;
-                }
-            } catch (err) {
-                console.warn(`Firebase root fixedCosts load warning:`, err);
-            }
+            console.warn(`Firebase mess fixedCosts load warning (${mKey}):`, err);
         }
 
         if (!fixedLoaded) {
@@ -412,10 +582,9 @@ async function loadMonthDataFromFirestore(mKey) {
             }
         }
 
-        // Layer 3: Members (subcollection & root fallback)
         let membersLoaded = false;
         try {
-            const memSnap = await getDocs(collection(window.firebaseDb, "months", mKey, "members"));
+            const memSnap = await getDocs(collection(window.firebaseDb, "messes", MESS_ID, "months", mKey, "members"));
             if (memSnap && !memSnap.empty) {
                 const membersList = [];
                 memSnap.forEach(d => membersList.push(d.data()));
@@ -426,26 +595,7 @@ async function loadMonthDataFromFirestore(mKey) {
                 }
             }
         } catch (err) {
-            console.warn(`Firebase members month load warning (${mKey}):`, err);
-        }
-
-        if (!membersLoaded) {
-            try {
-                const rootMemSnap = await getDocs(collection(window.firebaseDb, "members"));
-                if (rootMemSnap && !rootMemSnap.empty) {
-                    const membersList = [];
-                    rootMemSnap.forEach(d => {
-                        if (d.id !== "master") membersList.push(d.data());
-                    });
-                    if (membersList.length > 0) {
-                        state.members = membersList;
-                        ensureMemberOrder();
-                        membersLoaded = true;
-                    }
-                }
-            } catch (err) {
-                console.warn(`Firebase root members load warning:`, err);
-            }
+            console.warn(`Firebase mess members load warning (${mKey}):`, err);
         }
 
         if (!membersLoaded) {
@@ -461,10 +611,9 @@ async function loadMonthDataFromFirestore(mKey) {
             }
         }
 
-        // Layer 4: Notices (subcollection & root fallback)
         let noticesLoaded = false;
         try {
-            const notSnap = await getDocs(collection(window.firebaseDb, "months", mKey, "notices"));
+            const notSnap = await getDocs(collection(window.firebaseDb, "messes", MESS_ID, "months", mKey, "notices"));
             if (notSnap && !notSnap.empty) {
                 const noticesList = [];
                 notSnap.forEach(d => noticesList.push(d.data()));
@@ -474,23 +623,7 @@ async function loadMonthDataFromFirestore(mKey) {
                 }
             }
         } catch (err) {
-            console.warn(`Firebase notices month load warning (${mKey}):`, err);
-        }
-
-        if (!noticesLoaded) {
-            try {
-                const rootNotSnap = await getDocs(collection(window.firebaseDb, "notices"));
-                if (rootNotSnap && !rootNotSnap.empty) {
-                    const noticesList = [];
-                    rootNotSnap.forEach(d => noticesList.push(d.data()));
-                    if (noticesList.length > 0) {
-                        state.notices = noticesList;
-                        noticesLoaded = true;
-                    }
-                }
-            } catch (err) {
-                console.warn(`Firebase root notices load warning:`, err);
-            }
+            console.warn(`Firebase mess notices load warning (${mKey}):`, err);
         }
 
         if (!noticesLoaded) {
@@ -499,10 +632,9 @@ async function loadMonthDataFromFirestore(mKey) {
                 : [];
         }
 
-        // Layer 5: Transactions (subcollection & root fallback)
         let txnsLoaded = false;
         try {
-            const txnSnap = await getDocs(collection(window.firebaseDb, "months", mKey, "transactions"));
+            const txnSnap = await getDocs(collection(window.firebaseDb, "messes", MESS_ID, "months", mKey, "transactions"));
             if (txnSnap && !txnSnap.empty) {
                 const txnsList = [];
                 txnSnap.forEach(d => txnsList.push(d.data()));
@@ -513,24 +645,7 @@ async function loadMonthDataFromFirestore(mKey) {
                 }
             }
         } catch (err) {
-            console.warn(`Firebase transactions month load warning (${mKey}):`, err);
-        }
-
-        if (!txnsLoaded) {
-            try {
-                const rootTxnSnap = await getDocs(collection(window.firebaseDb, "transactions"));
-                if (rootTxnSnap && !rootTxnSnap.empty) {
-                    const txnsList = [];
-                    rootTxnSnap.forEach(d => txnsList.push(d.data()));
-                    if (txnsList.length > 0) {
-                        txnsList.sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
-                        state.transactions = txnsList;
-                        txnsLoaded = true;
-                    }
-                }
-            } catch (err) {
-                console.warn(`Firebase root transactions load warning:`, err);
-            }
+            console.warn(`Firebase mess transactions load warning (${mKey}):`, err);
         }
 
         if (!txnsLoaded) {
@@ -539,7 +654,6 @@ async function loadMonthDataFromFirestore(mKey) {
                 : [];
         }
 
-        // Update local state.months dictionary
         if (!state.months) state.months = {};
         state.months[mKey] = {
             fixedCosts: { ...state.fixedCosts },

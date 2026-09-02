@@ -6,61 +6,160 @@
     }
   },
   "months": {
-    "2026-08": {
-      "fixedCosts": {
-        "electricity": 1500,
-        "gas": 1800,
-        "waterBottleCount": 40,
-        "waterBottlePrice": 20,
-        "waterBill": 800,
-        "wifi": 700,
-        "khala": 2500,
-        "waste": 70
-      },
+    "2026-01": {
+      "fixedCosts": { "electricity": 0, "gas": 0, "waterBottleCount": 0, "waterBottlePrice": 0, "waterBill": 0, "wifi": 0, "khala": 0, "waste": 0 },
       "members": {
-        "আজমাইন": { "name": "আজমাইন", "meals": 59, "bazarDeposit": 2451, "rent": 2200, "fridgeAdj": -120 },
-        "রিয়াজ": { "name": "রিয়াজ", "meals": 42, "bazarDeposit": 2299, "rent": 2200, "fridgeAdj": -120 },
-        "সাকিব": { "name": "সাকিব", "meals": 5, "bazarDeposit": 0, "rent": 2000, "fridgeAdj": 480 },
-        "ওমর": { "name": "ওমর", "meals": 0, "bazarDeposit": 0, "rent": 2000, "fridgeAdj": 0 },
-        "নাফিজ": { "name": "নাফিজ", "meals": 53, "bazarDeposit": 0, "rent": 1800, "fridgeAdj": -120 },
-        "ফারেছ": { "name": "ফারেছ", "meals": 43, "bazarDeposit": 3391, "rent": 1800, "fridgeAdj": -120 }
+        "আজমাইন": { "name": "আজমাইন", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "রিয়াজ": { "name": "রিয়াজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "সাকিব": { "name": "সাকিব", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ওমর": { "name": "ওমর", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "নাফিজ": { "name": "নাফিজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ফারেছ": { "name": "ফারেছ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 }
       },
-      "notices": [
-        { "id": 1, "text": "🚨 জুলাই ২০২৬ বিল পরিশোধের সময়সীমা: আগামী ৫ তারিখের মধ্যে ইউটিলিটি ও ৮ তারিখের মধ্যে বাসা ভাড়া দিতে হবে। মোট বাসা ভাড়া ১২,০০০ টাকা।", "type": "notice-urgent" },
-        { "id": 2, "text": "🌱 অগ্রিম ইউটিলিটি বিল: কারেন্ট ৳১৫০০, গ্যাস ৳১৮০০, পানি ৳৮০০, ওয়াইফাই ৳৭০০ এবং বর্তমান খালার বিল ৳২৫০০, ময়লা ৳৭০ হিসাবভুক্ত করা হয়েছে।", "type": "notice-advance" },
-        { "id": 3, "text": "🧊 ফ্রিজ বহনের BDT 600 হিসাব: সাকিব পরিশোধ করেছেন (ওমর বাদে বাকি ৫ জন BDT 120 করে শেয়ার করবেন)।", "type": "notice-info" },
-        { "id": 4, "text": "👥 জরুরি মিটিং: আগামী শুক্রবার জুম্মার নামাজের পর মেসের হিসাব নিকেশ নিয়ে বৈঠক হবে।", "type": "notice-meeting" },
-        { "id": 5, "text": "🛒 বাজার আপডেট: প্রতিদিনের বাজার তালিকা এবং মিল এন্ট্রি সময়মতো সম্পন্ন করুন।", "type": "notice-bazar" },
-        { "id": 6, "text": "📌 সাধারণ নির্দেশনা: মেসের কমন স্পেস পরিষ্কার পরিচ্ছন্ন রাখুন।", "type": "notice-other" }
-      ],
-      "transactions": [
-        { "id": 101, "date": "01/08/2026, 10:30 AM", "member": "আজমাইন", "note": "প্রাথমিক বাজার জমা", "amount": 2451 },
-        { "id": 102, "date": "02/08/2026, 02:15 PM", "member": "রিয়াজ", "note": "প্রাথমিক বাজার জমা", "amount": 2299 },
-        { "id": 103, "date": "03/08/2026, 06:40 PM", "member": "ফারেছ", "note": "প্রাথমিক বাজার জমা", "amount": 3391 }
-      ]
+      "notices": [],
+      "transactions": []
+    },
+    "2026-02": {
+      "fixedCosts": { "electricity": 0, "gas": 0, "waterBottleCount": 0, "waterBottlePrice": 0, "waterBill": 0, "wifi": 0, "khala": 0, "waste": 0 },
+      "members": {
+        "আজমাইন": { "name": "আজমাইন", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "রিয়াজ": { "name": "রিয়াজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "সাকিব": { "name": "সাকিব", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ওমর": { "name": "ওমর", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "নাফিজ": { "name": "নাফিজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ফারেছ": { "name": "ফারেছ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 }
+      },
+      "notices": [],
+      "transactions": []
+    },
+    "2026-03": {
+      "fixedCosts": { "electricity": 0, "gas": 0, "waterBottleCount": 0, "waterBottlePrice": 0, "waterBill": 0, "wifi": 0, "khala": 0, "waste": 0 },
+      "members": {
+        "আজমাইন": { "name": "আজমাইন", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "রিয়াজ": { "name": "রিয়াজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "সাকিব": { "name": "সাকিব", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ওমর": { "name": "ওমর", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "নাফিজ": { "name": "নাফিজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ফারেছ": { "name": "ফারেছ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 }
+      },
+      "notices": [],
+      "transactions": []
+    },
+    "2026-04": {
+      "fixedCosts": { "electricity": 0, "gas": 0, "waterBottleCount": 0, "waterBottlePrice": 0, "waterBill": 0, "wifi": 0, "khala": 0, "waste": 0 },
+      "members": {
+        "আজমাইন": { "name": "আজমাইন", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "রিয়াজ": { "name": "রিয়াজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "সাকিব": { "name": "সাকিব", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ওমর": { "name": "ওমর", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "নাফিজ": { "name": "নাফিজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ফারেছ": { "name": "ফারেছ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 }
+      },
+      "notices": [],
+      "transactions": []
+    },
+    "2026-05": {
+      "fixedCosts": { "electricity": 0, "gas": 0, "waterBottleCount": 0, "waterBottlePrice": 0, "waterBill": 0, "wifi": 0, "khala": 0, "waste": 0 },
+      "members": {
+        "আজমাইন": { "name": "আজমাইন", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "রিয়াজ": { "name": "রিয়াজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "সাকিব": { "name": "সাকিব", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ওমর": { "name": "ওমর", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "নাফিজ": { "name": "নাফিজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ফারেছ": { "name": "ফারেছ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 }
+      },
+      "notices": [],
+      "transactions": []
+    },
+    "2026-06": {
+      "fixedCosts": { "electricity": 0, "gas": 0, "waterBottleCount": 0, "waterBottlePrice": 0, "waterBill": 0, "wifi": 0, "khala": 0, "waste": 0 },
+      "members": {
+        "আজমাইন": { "name": "আজমাইন", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "রিয়াজ": { "name": "রিয়াজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "সাকিব": { "name": "সাকিব", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ওমর": { "name": "ওমর", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "নাফিজ": { "name": "নাফিজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ফারেছ": { "name": "ফারেছ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 }
+      },
+      "notices": [],
+      "transactions": []
+    },
+    "2026-07": {
+      "fixedCosts": { "electricity": 0, "gas": 0, "waterBottleCount": 0, "waterBottlePrice": 0, "waterBill": 0, "wifi": 0, "khala": 0, "waste": 0 },
+      "members": {
+        "আজমাইন": { "name": "আজমাইন", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "রিয়াজ": { "name": "রিয়াজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "সাকিব": { "name": "সাকিব", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ওমর": { "name": "ওমর", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "নাফিজ": { "name": "নাফিজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ফারেছ": { "name": "ফারেছ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 }
+      },
+      "notices": [],
+      "transactions": []
+    },
+    "2026-08": {
+      "fixedCosts": { "electricity": 0, "gas": 0, "waterBottleCount": 0, "waterBottlePrice": 0, "waterBill": 0, "wifi": 0, "khala": 0, "waste": 0 },
+      "members": {
+        "আজমাইন": { "name": "আজমাইন", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "রিয়াজ": { "name": "রিয়াজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "সাকিব": { "name": "সাকিব", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ওমর": { "name": "ওমর", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "নাফিজ": { "name": "নাফিজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ফারেছ": { "name": "ফারেছ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 }
+      },
+      "notices": [],
+      "transactions": []
     },
     "2026-09": {
-      "fixedCosts": {
-        "electricity": 1600,
-        "gas": 1850,
-        "waterBottleCount": 42,
-        "waterBottlePrice": 20,
-        "waterBill": 840,
-        "wifi": 700,
-        "khala": 2500,
-        "waste": 70
-      },
+      "fixedCosts": { "electricity": 0, "gas": 0, "waterBottleCount": 0, "waterBottlePrice": 0, "waterBill": 0, "wifi": 0, "khala": 0, "waste": 0 },
       "members": {
-        "আজমাইন": { "name": "আজমাইন", "meals": 61, "bazarDeposit": 0, "rent": 2200, "fridgeAdj": 0 },
-        "রিয়াজ": { "name": "রিয়াজ", "meals": 44, "bazarDeposit": 0, "rent": 2200, "fridgeAdj": 0 },
-        "সাকিব": { "name": "সাকিব", "meals": 8, "bazarDeposit": 0, "rent": 2000, "fridgeAdj": 0 },
-        "ওমর": { "name": "ওমর", "meals": 0, "bazarDeposit": 0, "rent": 2000, "fridgeAdj": 0 },
-        "নাফিজ": { "name": "নাফিজ", "meals": 55, "bazarDeposit": 0, "rent": 1800, "fridgeAdj": 0 },
-        "ফারেছ": { "name": "ফারেছ", "meals": 46, "bazarDeposit": 0, "rent": 1800, "fridgeAdj": 0 }
+        "আজমাইন": { "name": "আজমাইন", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "রিয়াজ": { "name": "রিয়াজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "সাকিব": { "name": "সাকিব", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ওমর": { "name": "ওমর", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "নাফিজ": { "name": "নাফিজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ফারেছ": { "name": "ফারেছ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 }
       },
-      "notices": [
-        { "id": 1, "text": "📌 সেপ্টেম্বর ২০২৬-এর হিসাব শুরু হয়েছে। প্রত্যেকে মিল রিপোর্ট আপডেট করুন।", "type": "notice-info" }
-      ],
+      "notices": [],
+      "transactions": []
+    },
+    "2026-10": {
+      "fixedCosts": { "electricity": 0, "gas": 0, "waterBottleCount": 0, "waterBottlePrice": 0, "waterBill": 0, "wifi": 0, "khala": 0, "waste": 0 },
+      "members": {
+        "আজমাইন": { "name": "আজমাইন", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "রিয়াজ": { "name": "রিয়াজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "সাকিব": { "name": "সাকিব", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ওমর": { "name": "ওমর", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "নাফিজ": { "name": "নাফিজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ফারেছ": { "name": "ফারেছ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 }
+      },
+      "notices": [],
+      "transactions": []
+    },
+    "2026-11": {
+      "fixedCosts": { "electricity": 0, "gas": 0, "waterBottleCount": 0, "waterBottlePrice": 0, "waterBill": 0, "wifi": 0, "khala": 0, "waste": 0 },
+      "members": {
+        "আজমাইন": { "name": "আজমাইন", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "রিয়াজ": { "name": "রিয়াজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "সাকিব": { "name": "সাকিব", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ওমর": { "name": "ওমর", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "নাফিজ": { "name": "নাফিজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ফারেছ": { "name": "ফারেছ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 }
+      },
+      "notices": [],
+      "transactions": []
+    },
+    "2026-12": {
+      "fixedCosts": { "electricity": 0, "gas": 0, "waterBottleCount": 0, "waterBottlePrice": 0, "waterBill": 0, "wifi": 0, "khala": 0, "waste": 0 },
+      "members": {
+        "আজমাইন": { "name": "আজমাইন", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "রিয়াজ": { "name": "রিয়াজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "সাকিব": { "name": "সাকিব", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ওমর": { "name": "ওমর", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "নাফিজ": { "name": "নাফিজ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 },
+        "ফারেছ": { "name": "ফারেছ", "meals": 0, "bazarDeposit": 0, "rent": 0, "fridgeAdj": 0 }
+      },
+      "notices": [],
       "transactions": []
     }
   }
