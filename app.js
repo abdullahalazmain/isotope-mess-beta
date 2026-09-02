@@ -23,12 +23,17 @@ function generateIsotopeId(prefix = "GEN") {
 }
 
 function getDataNamespace() {
-    return window.IS_DEV_MODE ? "dev" : "prod";
+    return state && state.developerMode ? "dev" : (window.IS_DEV_MODE ? "dev" : "prod");
 }
 
 function getDataPath(...segments) {
-    const explicitEnv = segments.length && ['dev', 'prod'].includes(String(segments[0])) ? segments.shift() : getDataNamespace();
+    const requestedEnv = segments.length && ['dev', 'prod'].includes(String(segments[0])) ? segments.shift() : null;
+    const explicitEnv = window.IS_DEV_MODE ? 'dev' : (requestedEnv || getDataNamespace());
     return ['data', explicitEnv, ...segments].filter(Boolean);
+}
+
+function getSafeDataEnvironment(requestedEnv = null) {
+    return window.IS_DEV_MODE ? 'dev' : (requestedEnv || getDataNamespace());
 }
 
 function isValidAdminPassword(candidate, allowLegacy = true) {
@@ -228,6 +233,7 @@ function getCurrentResetYear() {
 const emptyStartMonth = createEmptyMonthData(DEFAULT_ACTIVE_MONTH_KEY);
 state = {
     isAdmin: false,
+    developerMode: Boolean(window.IS_DEV_MODE),
     adminPassword: DEFAULT_ADMIN_PASSWORD,
     customAdjLabel: DEFAULT_CUSTOM_ADJ_LABEL,
     activeMonth: DEFAULT_ACTIVE_MONTH_KEY,
@@ -277,7 +283,7 @@ async function resetFirestoreDatabase({ env = null } = {}) {
     }
 
     const deletedPaths = [];
-    const targetEnv = env || getDataNamespace();
+    const targetEnv = getSafeDataEnvironment(env);
     const rootCollections = [
         "app",
         "messes",
@@ -311,7 +317,7 @@ async function resetFirestoreDatabase({ env = null } = {}) {
 }
 
 async function bootstrapEmptyFirestoreTree({ env = null, messName = "Isotope Mess", messId = DEFAULT_MESS_ID } = {}) {
-    const targetEnv = env || getDataNamespace();
+    const targetEnv = getSafeDataEnvironment(env);
 
     if (!window.firebaseDb) {
         await ensureFirebaseReady({ force: true });
@@ -430,7 +436,7 @@ async function bootstrapEmptyFirestoreTree({ env = null, messName = "Isotope Mes
 }
 
 async function initializeFreshLiveMess({ env = null, messName = "Isotope Mess" } = {}) {
-    const targetEnv = env || getDataNamespace();
+    const targetEnv = getSafeDataEnvironment(env);
     const targetMessId = generateIsotopeId("MESS");
     const now = new Date().toISOString();
     const basePath = getDataPath(targetEnv);
@@ -504,7 +510,7 @@ async function initializeFreshLiveMess({ env = null, messName = "Isotope Mess" }
 }
 
 async function resetFirebaseToFreshMess({ env = null, messName = "Isotope Mess", forceInit = true } = {}) {
-    const targetEnv = env || getDataNamespace();
+    const targetEnv = getSafeDataEnvironment(env);
 
     await ensureFirebaseReady({ force: forceInit });
     const clearResult = await resetFirestoreDatabase({ env: targetEnv });
@@ -516,7 +522,7 @@ async function resetFirebaseToFreshMess({ env = null, messName = "Isotope Mess",
 }
 
 async function resetFirebaseToFreshMessSafe({ env = null, messName = "Isotope Mess", forceInit = true } = {}) {
-    const targetEnv = env || getDataNamespace();
+    const targetEnv = getSafeDataEnvironment(env);
 
     if (!window.firebaseDb) {
         await ensureFirebaseReady({ force: forceInit });
@@ -763,6 +769,74 @@ async function getFirestoreModule() {
     return firestoreModuleCache;
 }
 
+async function copyFirestoreCollection(sourcePath, targetPath, setDoc) {
+    const { collection, getDocs, doc } = await getFirestoreModule();
+    const snapshot = await getDocs(collection(window.firebaseDb, ...sourcePath));
+    for (const sourceDoc of snapshot.docs) {
+        await setDoc(doc(window.firebaseDb, ...targetPath, sourceDoc.id), {
+            ...sourceDoc.data(),
+            environment: 'dev',
+            updatedAt: new Date().toISOString()
+        }, { merge: true });
+    }
+    return snapshot.docs;
+}
+
+async function syncProductionToDev() {
+    if (window.IS_DEV_MODE) {
+        throw new Error('Production-to-dev sync is unavailable on the local server.');
+    }
+
+    if (!window.firebaseDb) await ensureFirebaseReady({ force: true });
+    if (!window.firebaseDb) throw new Error('Firebase database not connected.');
+
+    const { collection, getDocs, doc, setDoc } = await getFirestoreModule();
+    const topLevelCollections = ['app', 'settings', 'members', 'months', 'notices', 'transactions', 'profiles', 'accounts', 'auditLogs'];
+    for (const collectionName of topLevelCollections) {
+        const sourceSnapshot = await getDocs(collection(window.firebaseDb, 'data', 'prod', collectionName));
+        for (const sourceDoc of sourceSnapshot.docs) {
+            await setDoc(doc(window.firebaseDb, 'data', 'dev', collectionName, sourceDoc.id), {
+                ...sourceDoc.data(), environment: 'dev', updatedAt: new Date().toISOString()
+            }, { merge: true });
+        }
+    }
+
+    const messSnapshot = await getDocs(collection(window.firebaseDb, 'data', 'prod', 'messes'));
+    for (const messDoc of messSnapshot.docs) {
+        const messId = messDoc.id;
+        await setDoc(doc(window.firebaseDb, 'data', 'dev', 'messes', messId), {
+            ...messDoc.data(), environment: 'dev', updatedAt: new Date().toISOString()
+        }, { merge: true });
+        for (const childCollection of ['settings', 'members', 'notices', 'transactions', 'extensions']) {
+            await copyFirestoreCollection(
+                ['data', 'prod', 'messes', messId, childCollection],
+                ['data', 'dev', 'messes', messId, childCollection],
+                setDoc
+            );
+        }
+        const monthSnapshot = await getDocs(collection(window.firebaseDb, 'data', 'prod', 'messes', messId, 'months'));
+        for (const monthDoc of monthSnapshot.docs) {
+            const monthId = monthDoc.id;
+            await setDoc(doc(window.firebaseDb, 'data', 'dev', 'messes', messId, 'months', monthId), {
+                ...monthDoc.data(), environment: 'dev', updatedAt: new Date().toISOString()
+            }, { merge: true });
+            for (const monthCollection of ['members', 'notices', 'transactions', 'meta']) {
+                await copyFirestoreCollection(
+                    ['data', 'prod', 'messes', messId, 'months', monthId, monthCollection],
+                    ['data', 'dev', 'messes', messId, 'months', monthId, monthCollection],
+                    setDoc
+                );
+            }
+        }
+    }
+    await setDoc(doc(window.firebaseDb, 'data', 'dev'), {
+        environment: 'dev', type: 'namespace', schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        source: 'prod', updatedAt: new Date().toISOString()
+    }, { merge: true });
+}
+
+window.syncProductionToDev = syncProductionToDev;
+
 async function ensureFirebaseReady({ force = false } = {}) {
     if (window.firebaseDb && !force) {
         return window.firebaseDb;
@@ -828,6 +902,7 @@ function persistLocally() {
         activeMonth: state.activeMonth,
         adminPassword: state.adminPassword,
         customAdjLabel: state.customAdjLabel,
+        developerMode: state.developerMode,
         version: "3.0"
     }));
 }
@@ -1953,10 +2028,44 @@ function renderTransposedTable(mealRate, perHead) {
 
 function renderNotices() {
     const container = $('noticeContainer');
-    if (!container) return;
-    container.innerHTML = state.notices.map(n =>
+    const boardNotices = state.notices.filter(n => (n.displayMode || 'board') === 'board');
+    if (container) container.innerHTML = boardNotices.map(n =>
         `<div class="notice-box ${escapeHtml(n.type || 'notice-other')} clay-inset" style="${noticeStyle(n)}">${noticeTextHtml(n)}</div>`
     ).join('');
+
+    const ticker = $('noticeTicker');
+    const tickerNotices = state.developerMode
+        ? state.notices.filter(n => n.displayMode === 'ticker')
+        : [];
+    if (ticker) {
+        ticker.hidden = tickerNotices.length === 0;
+        ticker.innerHTML = tickerNotices.length
+            ? `<div class="notice-ticker-track"><span>${tickerNotices.map(noticeTextHtml).join(' &nbsp; • &nbsp; ')}</span></div>`
+            : '';
+    }
+
+    const popupNotices = state.notices.filter(n => n.displayMode === 'popup');
+    if (popupNotices.length && !noticePopupShown) showNoticePopup(popupNotices);
+}
+
+let noticePopupShown = false;
+
+function showNoticePopup(notices) {
+    const modal = $('noticePopup');
+    const body = $('noticePopupBody');
+    if (!modal || !body || !notices.length) return;
+    body.innerHTML = notices.map(n => `<div class="notice-box ${escapeHtml(n.type || 'notice-other')}" style="${noticeStyle(n)}">${noticeTextHtml(n)}</div>`).join('');
+    modal.hidden = false;
+    modal.style.display = 'flex';
+    noticePopupShown = true;
+}
+
+function closeNoticePopup() {
+    const modal = $('noticePopup');
+    if (modal) {
+        modal.hidden = true;
+        modal.style.display = 'none';
+    }
 }
 
 function noticeStyle(notice) {
@@ -2412,6 +2521,7 @@ function editNotice(noticeId) {
     editingNoticeId = noticeId;
     $('newNoticeText').value = notice.text || '';
     $('newNoticeType').value = notice.type || 'notice-other';
+    if ($('newNoticeDisplayMode')) $('newNoticeDisplayMode').value = notice.displayMode || 'board';
     $('newNoticeColor').value = notice.color || getNoticeTypeColor(notice.type);
     $('newNoticeEmoji').value = notice.emoji || '📌';
     if ($('selectedNoticeEmoji')) $('selectedNoticeEmoji').textContent = notice.emoji || '📌';
@@ -2446,6 +2556,7 @@ function addNewNotice() {
     const type = $('newNoticeType').value;
     const color = $('newNoticeColor')?.value || '#64748b';
     const emoji = $('newNoticeEmoji')?.value || '📌';
+    const displayMode = $('newNoticeDisplayMode')?.value || 'board';
     if (!text) {
         showToast("নোটিশের তথ্য লিখুন!", "error");
         return;
@@ -2453,10 +2564,10 @@ function addNewNotice() {
 
     if (editingNoticeId !== null) {
         const notice = state.notices.find(item => item.id === editingNoticeId);
-        if (notice) Object.assign(notice, { text, type, color, emoji });
+        if (notice) Object.assign(notice, { text, type, color, emoji, displayMode });
         editingNoticeId = null;
     } else {
-        state.notices.push({ id: Date.now(), text, type, color, emoji });
+        state.notices.push({ id: Date.now(), text, type, color, emoji, displayMode });
     }
     $('newNoticeText').value = '';
     if ($('newNoticeColor')) $('newNoticeColor').value = getNoticeTypeColor('notice-urgent');
@@ -2866,6 +2977,7 @@ function openNoticeModal() {
     editingNoticeId = null;
     $('newNoticeText').value = '';
     if ($('newNoticeType')) $('newNoticeType').value = 'notice-other';
+    if ($('newNoticeDisplayMode')) $('newNoticeDisplayMode').value = 'board';
     if ($('newNoticeColor')) $('newNoticeColor').value = getNoticeTypeColor('notice-urgent');
     if ($('newNoticeEmoji')) $('newNoticeEmoji').value = '📌';
     if ($('selectedNoticeEmoji')) $('selectedNoticeEmoji').textContent = '📌';
@@ -2958,6 +3070,49 @@ function turnOffAdmin() {
     showToast("এডমিন মোড অফ করা হয়েছে।", "info");
 }
 
+function toggleDeveloperMode() {
+    const nextMode = !state.developerMode;
+    const action = nextMode ? 'অন' : 'অফ';
+    showConfirmModal(
+        `ডেভেলপার মোড ${action}`,
+        nextMode
+            ? (window.IS_DEV_MODE
+                ? 'লোকাল Dev data ব্যবহার করে ডেভেলপার মোড অন করতে চান?'
+                : 'Production data Dev data tree-তে কপি করে ডেভেলপার মোড অন করতে চান?')
+            : (window.IS_DEV_MODE
+                ? 'লোকাল Dev data রেখেই ডেভেলপার মোড অফ করতে চান?'
+                : 'ডেভেলপার মোড অফ করে Production data-তে ফিরে যেতে চান?'),
+        () => applyDeveloperModeToggle(nextMode)
+    );
+}
+
+async function applyDeveloperModeToggle(nextMode) {
+    const button = $('developerModeBtn');
+    if (button) button.disabled = true;
+    try {
+        if (nextMode && !window.IS_DEV_MODE) {
+            showToast('Production data থেকে Dev data tree আপডেট হচ্ছে...', 'info');
+            await syncProductionToDev();
+        }
+        state.developerMode = nextMode;
+        persistLocally();
+        if (window.firebaseDb && !window.IS_DEV_MODE) await loadFromFirestore();
+        renderNotices();
+        updateAdminUIState();
+        showToast(
+            window.IS_DEV_MODE
+                ? `লোকাল ডেভেলপার মোড ${nextMode ? 'অন' : 'অফ'} হয়েছে। ডাটা localStorage-এ থাকবে।`
+                : (nextMode ? 'ডেভেলপার মোড অন হয়েছে এবং Dev data লোড হয়েছে।' : 'ডেভেলপার মোড অফ হয়েছে; Production data লোড হয়েছে.'),
+            'success'
+        );
+    } catch (error) {
+        console.error('Developer mode sync failed:', error);
+        showToast('ডেভেলপার মোড পরিবর্তন করা যায়নি। Firebase সংযোগ ও permission পরীক্ষা করুন।', 'error');
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
+
 function updateAdminUIState() {
     const adminBtnText = $('adminBtnText');
     if (adminBtnText) {
@@ -2971,6 +3126,13 @@ function updateAdminUIState() {
     if (mobileAdminBtnText) {
         mobileAdminBtnText.innerText = state.isAdmin ? "এডমিন প্যানেল" : "এডমিন কন্ট্রোল";
     }
+    const developerModeBtn = $('developerModeBtn');
+    const developerModeBtnText = $('developerModeBtnText');
+    if (developerModeBtn) {
+        developerModeBtn.classList.toggle('is-on', Boolean(state.developerMode));
+        developerModeBtn.setAttribute('aria-pressed', String(Boolean(state.developerMode)));
+    }
+    if (developerModeBtnText) developerModeBtnText.innerText = state.developerMode ? 'ডেভেলপার মোড অন' : 'ডেভেলপার মোড অফ';
     renderTransactions();
 }
 
@@ -3037,6 +3199,7 @@ function initApp() {
                     if (parsed.adminPassword) state.adminPassword = parsed.adminPassword;
                     if (parsed.customAdjLabel) state.customAdjLabel = parsed.customAdjLabel;
                     if (parsed.activeMonth) state.activeMonth = parsed.activeMonth;
+                    if (typeof parsed.developerMode === 'boolean') state.developerMode = parsed.developerMode;
 
                     if (state.months && state.months[state.activeMonth]) {
                         const mData = state.months[state.activeMonth];
@@ -3063,6 +3226,7 @@ function initApp() {
     }
 
     updateMonthDisplayUI();
+    updateAdminUIState();
     calculateAll();
 
     if (window.firebaseDb) {
