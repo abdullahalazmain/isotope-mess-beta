@@ -2035,8 +2035,12 @@ function renderNotices() {
 
     const ticker = $('noticeTicker');
     const tickerNotices = state.developerMode
-        ? state.notices.filter(n => n.displayMode === 'ticker')
-        : [];
+        ? [{
+            hideEmoji: true,
+            type: 'notice-info',
+            text: '🚀 আমাদের সিস্টেমে ডেভেলপমেন্টের কাজ চলছে। আগামী মাসের মিল হিসাব 📊, ইউটিলিটি বিল 💡 ও নতুন ফিচারসমূহ খুব শীঘ্রই আসছে। সাথেই থাকুন! 😊'
+        }]
+        : state.notices.filter(n => n.displayMode === 'ticker');
     if (ticker) {
         ticker.hidden = tickerNotices.length === 0;
         ticker.innerHTML = tickerNotices.length
@@ -2074,7 +2078,7 @@ function noticeStyle(notice) {
 
 function noticeTextHtml(notice) {
     const text = escapeHtml(notice.text || '').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    return `${escapeHtml(notice.emoji || '📌')} ${text}`;
+    return notice.hideEmoji ? text : `${escapeHtml(notice.emoji || '📌')} ${text}`;
 }
 
 const NOTICE_EMOJIS = ['📌', '📢', '⚠️', '✅', '💰', '🛒', '👥', '📝', '🔔', '⭐', '🚨', '💡'];
