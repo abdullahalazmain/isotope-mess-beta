@@ -1183,29 +1183,30 @@ function renderMemberManagerList() {
         return;
     }
 
-    let html = `
-        <div class="member-mgr-grid">
-    `;
+    const activeMembers = state.masterMembers.filter(member => member.isActive !== false);
+    const removedMembers = state.masterMembers.filter(member => member.isActive === false);
 
-    state.masterMembers.forEach((m, idx) => {
+    const renderMemberCard = (m, isRemoved) => {
         const isActiveInCurrent = isMemberActiveInMonth(m, state.activeMonth);
         const joinLabel = getBengaliMonthLabel(m.joinMonth || "2026-01");
         const leaveLabel = m.leaveMonth ? getBengaliMonthLabel(m.leaveMonth) : null;
+        const addedDate = m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-GB') : joinLabel;
+        const removedDate = m.removedAt ? new Date(m.removedAt).toLocaleDateString('en-GB') : (leaveLabel || '—');
 
         let statusBadge = '';
         if (isActiveInCurrent) {
-            statusBadge = `<span class="badge-pill" style="background:#dcfce7; color:#166534; border:1px solid #4ade80;">🟢 সক্রিয় (${getBengaliMonthLabel(state.activeMonth)})</span>`;
+            statusBadge = `<span class="badge-pill" style="background:#dcfce7; color:#166534; border:1px solid #4ade80;">সক্রিয় (${getBengaliMonthLabel(state.activeMonth)})</span>`;
         } else if (m.leaveMonth && m.leaveMonth < state.activeMonth) {
-            statusBadge = `<span class="badge-pill" style="background:#fee2e2; color:#991b1b; border:1px solid #f87171;">🔴 রিলিজ (${leaveLabel})</span>`;
+            statusBadge = `<span class="badge-pill" style="background:#fee2e2; color:#991b1b; border:1px solid #f87171;">রিলিজ (${leaveLabel})</span>`;
         } else {
             statusBadge = `<span class="badge-pill" style="background:#fef3c7; color:#92400e; border:1px solid #f59e0b;">⏳ যোগ দেবেন (${joinLabel})</span>`;
         }
 
-        const actionBtn = isActiveInCurrent
+        const actionBtn = !isRemoved && isActiveInCurrent
             ? `<button class="btn clay-btn clay-btn-danger" style="padding:4px 10px; font-size:11.5px;" onclick="openRemoveMemberModal('${m.id}')">রিলিজ / রিমুভ</button>`
-            : `<button class="btn clay-btn clay-btn-primary" style="padding:4px 10px; font-size:11.5px;" onclick="reactivateMember('${m.id}')">পুনরায় সক্রিয় করুন</button>`;
+            : isRemoved ? `<button class="btn clay-btn clay-btn-primary" style="padding:4px 10px; font-size:11.5px;" onclick="reactivateMember('${m.id}')">রি-অ্যাড করুন</button>` : '';
 
-        html += `
+        return `
             <div class="member-mgr-card clay-inset">
                 <div class="member-mgr-header">
                     <div>
@@ -1215,19 +1216,26 @@ function renderMemberManagerList() {
                     <div>${statusBadge}</div>
                 </div>
                 <div class="member-mgr-body">
-                    <div>📅 <strong>যোগদান:</strong> ${joinLabel}</div>
-                    ${m.leaveMonth ? `<div>🚪 <strong>রিলিজ:</strong> ${leaveLabel} পর্যন্ত</div>` : ''}
-                    <div>🏠 <strong>সিট ভাড়া:</strong> BDT ${m.defaultRent || 0}</div>
-                    ${m.phone ? `<div>📞 <strong>ফোন:</strong> ${m.phone}</div>` : ''}
+                    <div><strong>অ্যাড ডেট:</strong> ${addedDate}</div>
+                    ${isRemoved ? `<div><strong>রিমুভ ডেট:</strong> ${removedDate}</div>` : `<div><strong>যোগদানের মাস:</strong> ${joinLabel}</div>`}
+                    <div><strong>সিট ভাড়া:</strong> BDT ${m.defaultRent || 0}</div>
+                    ${m.phone ? `<div><strong>ফোন:</strong> ${escapeHtml(m.phone)}</div>` : ''}
                 </div>
                 <div class="member-mgr-footer">
                     ${actionBtn}
                 </div>
             </div>
         `;
-    });
+    };
 
-    html += `</div>`;
+    let html = '';
+    if (activeMembers.length) {
+        html += `<section class="member-mgr-section"><h4 class="member-mgr-section-title">অ্যাক্টিভ মেম্বার <span>${activeMembers.length}</span></h4><div class="member-mgr-grid">${activeMembers.map(member => renderMemberCard(member, false)).join('')}</div></section>`;
+    }
+    if (removedMembers.length) {
+        html += `<section class="member-mgr-section member-mgr-section--removed"><h4 class="member-mgr-section-title">রিমুভ করা মেম্বার <span>${removedMembers.length}</span></h4><div class="member-mgr-grid">${removedMembers.map(member => renderMemberCard(member, true)).join('')}</div></section>`;
+    }
+
     container.innerHTML = html;
 }
 
@@ -1260,7 +1268,8 @@ function submitAddNewMember() {
         defaultRent: defaultRent || 0,
         phone: phone || "",
         isActive: true,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        removedAt: null
     };
 
     if (!state.masterMembers) state.masterMembers = [];
@@ -1323,6 +1332,7 @@ function submitRemoveMember() {
     const leaveMonth = $('removeMemberLeaveMonth')?.value || state.activeMonth;
     member.leaveMonth = leaveMonth;
     member.isActive = false;
+    member.removedAt = new Date().toISOString();
 
     // Refresh active month view members
     const activeMasterList = getActiveMembersForMonth(state.activeMonth);
@@ -1342,6 +1352,7 @@ function reactivateMember(memberId) {
 
     member.leaveMonth = null;
     member.isActive = true;
+    member.removedAt = null;
 
     // If active in current month, ensure present in state.members
     if (isMemberActiveInMonth(member, state.activeMonth)) {
@@ -1890,7 +1901,7 @@ function renderTransposedTable(mealRate, perHead) {
         { label: 'মিল খরচ (BDT)', calc: (m) => (Number(m.meals || 0) * mealRate).toFixed(2) },
         { label: 'গত মাসের বকেয়া (BDT)', key: 'prevAdj', isRawFormatted: true },
         {
-            labelHtml: `অন্যান্য <span class="adj-info-wrapper"><button type="button" class="adj-info-btn" onclick="toggleAdjInfoTooltip(event)" title="বিস্তারিত বিবরণ">ℹ️</button><span class="adj-info-badge" style="display:none;">${escapeHtml(state.customAdjLabel || "এডজাস্টমেন্ট")}</span></span> (BDT)`,
+            labelHtml: `অন্যান্য <span class="adj-info-wrapper"><button type="button" class="adj-info-btn" onclick="toggleAdjInfoTooltip(event)" title="বিস্তারিত বিবরণ" aria-label="বিস্তারিত বিবরণ"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 17h2v-6h-2v6zm0-8h2V7h-2v2zm1-7C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg></button><span class="adj-info-badge" style="display:none;">${escapeHtml(state.customAdjLabel || "এডজাস্টমেন্ট")}</span></span> (BDT)`,
             key: 'fridgeAdj',
             isRawFormatted: true
         },
@@ -1899,7 +1910,11 @@ function renderTransposedTable(mealRate, perHead) {
         { label: 'সর্বমোট বকেয়া (ভাড়া বাদে)', isNetPayable: true, rowClass: 'payable-row' },
         { label: 'সিট ভাড়া (BDT)', key: 'rent' },
         { label: 'সর্বমোট জমা (BDT)', isTotalDeposit: true, rowClass: 'total-dep-row' },
-        { label: '🏠 মোট বকেয়া (ভাড়াসহ)', isNetPayableWithRent: true, rowClass: 'net-rent-payable-row' }
+        {
+            labelHtml: '<span class="row-label-icon row-label-icon--home" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 3 3 10v10h6v-6h6v6h6V10l-9-7z"/></svg></span>মোট বকেয়া (ভাড়াসহ)',
+            isNetPayableWithRent: true,
+            rowClass: 'net-rent-payable-row'
+        }
     ];
 
     const utilitiesSum = perHead.elec + perHead.gas + perHead.water + perHead.wifi + perHead.khala + perHead.waste;
@@ -1940,9 +1955,75 @@ function renderNotices() {
     const container = $('noticeContainer');
     if (!container) return;
     container.innerHTML = state.notices.map(n =>
-        `<div class="notice-box ${n.type} clay-inset">${n.text}</div>`
+        `<div class="notice-box ${escapeHtml(n.type || 'notice-other')} clay-inset" style="${noticeStyle(n)}">${noticeTextHtml(n)}</div>`
     ).join('');
 }
+
+function noticeStyle(notice) {
+    return notice.color ? `--notice-color:${escapeHtml(notice.color)};` : '';
+}
+
+function noticeTextHtml(notice) {
+    const text = escapeHtml(notice.text || '').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    return `${escapeHtml(notice.emoji || '📌')} ${text}`;
+}
+
+const NOTICE_EMOJIS = ['📌', '📢', '⚠️', '✅', '💰', '🛒', '👥', '📝', '🔔', '⭐', '🚨', '💡'];
+const NOTICE_TYPE_COLORS = {
+    'notice-urgent': '#ef4444',
+    'notice-advance': '#10b981',
+    'notice-info': '#f59e0b',
+    'notice-meeting': '#8b5cf6',
+    'notice-bazar': '#06b6d4',
+    'notice-complaint': '#f97316',
+    'notice-other': '#64748b'
+};
+
+function getNoticeTypeColor(type) {
+    return NOTICE_TYPE_COLORS[type] || NOTICE_TYPE_COLORS['notice-other'];
+}
+
+function updateNoticeColorPreview() {
+    const color = $('newNoticeColor')?.value || '#64748b';
+    const value = $('noticeColorValue');
+    if (value) value.textContent = color.toUpperCase();
+}
+
+document.addEventListener('input', event => {
+    if (event.target.id === 'newNoticeColor') updateNoticeColorPreview();
+});
+
+document.addEventListener('change', event => {
+    if (event.target.id !== 'newNoticeType' || !$('newNoticeColor')) return;
+    $('newNoticeColor').value = getNoticeTypeColor(event.target.value);
+    updateNoticeColorPreview();
+});
+
+function renderNoticeEmojiPicker() {
+    const picker = $('noticeEmojiPicker');
+    if (!picker || picker.children.length) return;
+    picker.innerHTML = NOTICE_EMOJIS.map(emoji =>
+        `<button type="button" class="notice-emoji-option" onclick="selectNoticeEmoji('${emoji}')" aria-label="${emoji}">${emoji}</button>`
+    ).join('');
+}
+
+function toggleNoticeEmojiPicker(event) {
+    event?.stopPropagation();
+    const picker = $('noticeEmojiPicker');
+    if (!picker) return;
+    renderNoticeEmojiPicker();
+    picker.classList.toggle('is-open');
+}
+
+function selectNoticeEmoji(emoji) {
+    if ($('newNoticeEmoji')) $('newNoticeEmoji').value = emoji;
+    if ($('selectedNoticeEmoji')) $('selectedNoticeEmoji').textContent = emoji;
+    $('noticeEmojiPicker')?.classList.remove('is-open');
+}
+
+document.addEventListener('click', event => {
+    if (!event.target.closest('.notice-composer')) $('noticeEmojiPicker')?.classList.remove('is-open');
+});
 
 function renderTransactions() {
     const tbody = $('txnExcelTableBody');
@@ -1968,7 +2049,7 @@ function renderTransactions() {
         totalAmount += Number(t.amount);
 
         const adminBtnHtml = adminMode
-            ? `<td class="text-center td-admin-action"><button class="btn clay-btn clay-btn-danger" style="padding: 3px 8px; font-size: 11px;" onclick="deleteTransaction(${t.id})"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg> ডিলিট</button></td>`
+            ? `<td class="text-center td-admin-action"><button class="btn clay-btn transaction-edit-btn" style="padding: 3px 8px; font-size: 11px;" onclick="editTransaction(${t.id})">এডিট</button> <button class="btn clay-btn clay-btn-danger" style="padding: 3px 8px; font-size: 11px;" onclick="deleteTransaction(${t.id})"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg> ডিলিট</button></td>`
             : '';
 
         rows.push(`
@@ -2112,9 +2193,9 @@ function renderDrawerInputs() {
     const noticeBox = $('adminNoticeList');
     if (noticeBox) {
         noticeBox.innerHTML = state.notices.map((n, idx) => `
-            <div class="notice-item-admin ${n.type}">
-                <span style="flex:1; word-break:break-word;">${n.text.substring(0, 32)}...</span>
-                <button class="btn clay-btn clay-btn-danger" style="padding: 3px 8px; font-size: 11px; flex-shrink:0;" onclick="deleteNotice(${idx})">ডিলিট</button>
+            <div class="notice-item-admin ${escapeHtml(n.type || 'notice-other')}" style="${noticeStyle(n)}">
+                <span style="flex:1; word-break:break-word;">${noticeTextHtml({ ...n, text: (n.text || '').substring(0, 32) })}...</span>
+                <span class="notice-admin-actions"><button class="btn clay-btn" style="padding: 3px 8px; font-size: 11px;" onclick="editNotice(${n.id})">এডিট</button><button class="btn clay-btn clay-btn-danger" style="padding: 3px 8px; font-size: 11px; flex-shrink:0;" onclick="deleteNotice(${idx})">ডিলিট</button></span>
             </div>
         `).join('');
     }
@@ -2133,7 +2214,7 @@ function renderMemberEditForm() {
     if (selectedName === '' || memberIdx === -1) {
         container.innerHTML = `
             <div style="text-align: center; padding: 24px; color: #64748b; font-size: 13.5px;">
-                👆 উপরে ড্রপডাউন থেকে একজন সদস্য নির্বাচন করুন
+                উপরে ড্রপডাউন থেকে একজন সদস্য নির্বাচন করুন
             </div>
         `;
         if (badgeEl) badgeEl.innerHTML = '';
@@ -2157,7 +2238,7 @@ function renderMemberEditForm() {
 
     const prevAdjFieldHtml = isJanuary ? `
         <div class="input-group" style="grid-column: 1 / -1; margin-top: 4px;">
-            <label>⏮️ পূর্ববর্তী মাসের বকেয়া/জমা (BDT):</label>
+            <label>পূর্ববর্তী মাসের বকেয়া/জমা (BDT):</label>
             <input type="number" id="single_mem_prev" class="drawer-input" value="${m.prevAdj || 0}">
             <span style="color:#64748b; font-size:11px;">(জানুয়ারি মাসের প্রারম্ভিক বকেয়া বা জমা ম্যানুয়ালি ইনপুট দিন)</span>
         </div>
@@ -2183,19 +2264,19 @@ function renderMemberEditForm() {
 
             <div class="member-edit-grid">
                 <div class="input-group">
-                    <label>🍽️ মিল সংখ্যা:</label>
+                    <label>মিল সংখ্যা:</label>
                     <input type="number" id="single_mem_meals" class="drawer-input" value="${m.meals}">
                 </div>
                 <div class="input-group">
-                    <label>🛒 বাজার জমা (BDT):</label>
+                    <label>বাজার জমা (BDT):</label>
                     <input type="number" id="single_mem_bazar" class="drawer-input" value="${m.bazarDeposit}">
                 </div>
                 <div class="input-group">
-                    <label>🏠 বাসাভাড়া (BDT):</label>
+                    <label>বাসাভাড়া (BDT):</label>
                     <input type="number" id="single_mem_rent" class="drawer-input" value="${m.rent || 0}">
                 </div>
                 <div class="input-group">
-                    <label>✨ অন্যান্য <span class="adj-info-wrapper"><button type="button" class="adj-info-btn" onclick="toggleAdjInfoTooltip(event)" title="বিবরণ দেখুন">ℹ️</button><span class="adj-info-badge" style="display:none;">${escapeHtml(state.customAdjLabel || "এডজাস্টমেন্ট")}</span></span>:</label>
+                    <label>অন্যান্য <span class="adj-info-wrapper"><button type="button" class="adj-info-btn" onclick="toggleAdjInfoTooltip(event)" title="বিবরণ দেখুন" aria-label="বিবরণ দেখুন"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 17h2v-6h-2v6zm0-8h2V7h-2v2zm1-7C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg></button><span class="adj-info-badge" style="display:none;">${escapeHtml(state.customAdjLabel || "এডজাস্টমেন্ট")}</span></span>:</label>
                     <input type="number" id="single_mem_fridge" class="drawer-input" value="${m.fridgeAdj || 0}">
                 </div>
                 ${prevAdjFieldHtml}
@@ -2230,6 +2311,22 @@ function saveSelectedMemberData(memberName) {
 }
 
 // ---------- Data Mutations ----------
+let editingTransactionId = null;
+
+function editTransaction(txnId) {
+    const transaction = state.transactions.find(t => t.id === txnId);
+    if (!transaction) return;
+    editingTransactionId = txnId;
+    openDepositModal();
+    $('txnMemberSelect').value = transaction.member;
+    $('txnAmountInput').value = transaction.amount;
+    $('txnNoteInput').value = transaction.note;
+    const title = $('depositModal')?.querySelector('h3');
+    const saveButton = $('depositModal')?.querySelector('.modal-actions .clay-btn-primary');
+    if (title) title.innerText = 'মেম্বার ডিপোজিট এডিট';
+    if (saveButton) saveButton.lastChild.textContent = ' ডিপোজিট আপডেট করুন';
+}
+
 function submitDepositTransaction() {
     const memberName = $('txnMemberSelect').value;
     const amount = numVal('txnAmountInput');
@@ -2243,13 +2340,17 @@ function submitDepositTransaction() {
     const now = new Date();
     const formattedDate = `${now.toLocaleDateString('en-GB')}, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
-    state.transactions.push({
-        id: Date.now(),
-        date: formattedDate,
-        member: memberName,
-        note: note,
-        amount: amount
-    });
+    if (editingTransactionId !== null) {
+        const transaction = state.transactions.find(t => t.id === editingTransactionId);
+        if (transaction) {
+            transaction.member = memberName;
+            transaction.note = note;
+            transaction.amount = amount;
+        }
+        editingTransactionId = null;
+    } else {
+        state.transactions.push({ id: Date.now(), date: formattedDate, member: memberName, note, amount });
+    }
 
     closeDepositModal();
     saveData();
@@ -2271,7 +2372,7 @@ function deleteTransaction(txnId) {
                 try {
                     const { doc, deleteDoc } = await getFirestoreModule();
                     const mKey = state.activeMonth;
-                    await deleteDoc(doc(window.firebaseDb, "months", mKey, "transactions", String(txnId)));
+                    await deleteDoc(doc(window.firebaseDb, ...getDataPath(), "messes", MESS_ID, "months", mKey, "transactions", String(txnId)));
                 } catch (e) {
                     console.error("Firebase delete transaction error:", e);
                 }
@@ -2280,6 +2381,25 @@ function deleteTransaction(txnId) {
             showToast("ট্রানজেকশন সফলভাবে ডিলিট করা হয়েছে!", "info");
         }
     );
+}
+
+let editingNoticeId = null;
+
+function editNotice(noticeId) {
+    const notice = state.notices.find(item => item.id === noticeId);
+    if (!notice) return;
+    openNoticeModal();
+    editingNoticeId = noticeId;
+    $('newNoticeText').value = notice.text || '';
+    $('newNoticeType').value = notice.type || 'notice-other';
+    $('newNoticeColor').value = notice.color || getNoticeTypeColor(notice.type);
+    $('newNoticeEmoji').value = notice.emoji || '📌';
+    if ($('selectedNoticeEmoji')) $('selectedNoticeEmoji').textContent = notice.emoji || '📌';
+    updateNoticeColorPreview();
+    const title = $('noticeModal')?.querySelector('h3');
+    const saveButton = $('noticeModal')?.querySelector('.modal-actions .clay-btn-primary');
+    if (title) title.innerText = 'নোটিশ এডিট করুন';
+    if (saveButton) saveButton.lastChild.textContent = ' নোটিশ আপডেট করুন';
 }
 
 function deleteNotice(idx) {
@@ -2293,7 +2413,7 @@ function deleteNotice(idx) {
         getFirestoreModule()
             .then(async ({ doc, deleteDoc }) => {
                 const mKey = state.activeMonth;
-                await deleteDoc(doc(window.firebaseDb, "months", mKey, "notices", String(noticeId)));
+                await deleteDoc(doc(window.firebaseDb, ...getDataPath(), "messes", MESS_ID, "months", mKey, "notices", String(noticeId)));
             })
             .catch(e => console.error("Firebase delete notice error:", e));
     }
@@ -2304,13 +2424,25 @@ function deleteNotice(idx) {
 function addNewNotice() {
     const text = textVal('newNoticeText');
     const type = $('newNoticeType').value;
+    const color = $('newNoticeColor')?.value || '#64748b';
+    const emoji = $('newNoticeEmoji')?.value || '📌';
     if (!text) {
         showToast("নোটিশের তথ্য লিখুন!", "error");
         return;
     }
 
-    state.notices.push({ id: Date.now(), text, type });
+    if (editingNoticeId !== null) {
+        const notice = state.notices.find(item => item.id === editingNoticeId);
+        if (notice) Object.assign(notice, { text, type, color, emoji });
+        editingNoticeId = null;
+    } else {
+        state.notices.push({ id: Date.now(), text, type, color, emoji });
+    }
     $('newNoticeText').value = '';
+    if ($('newNoticeColor')) $('newNoticeColor').value = getNoticeTypeColor('notice-urgent');
+    if ($('newNoticeEmoji')) $('newNoticeEmoji').value = '📌';
+    if ($('selectedNoticeEmoji')) $('selectedNoticeEmoji').textContent = '📌';
+    updateNoticeColorPreview();
     closeNoticeModal();
     saveData();
     showToast("নতুন নোটিশ প্রকাশিত হয়েছে!", "success");
@@ -2682,6 +2814,10 @@ function hideAdminPage() {
 function openDepositModal() {
     const modal = $('depositModal');
     if (!modal) return;
+    const title = modal.querySelector('h3');
+    const saveButton = modal.querySelector('.modal-actions .clay-btn-primary');
+    if (title) title.innerText = 'মেম্বার ডিপোজিট এন্ট্রি';
+    if (saveButton) saveButton.lastChild.textContent = ' জমা সেভ করুন';
     const select = $('txnMemberSelect');
     if (select) {
         select.innerHTML = '';
@@ -2699,11 +2835,23 @@ function openDepositModal() {
 function closeDepositModal() {
     const modal = $('depositModal');
     if (modal) modal.style.display = 'none';
+    editingTransactionId = null;
 }
 
 function openNoticeModal() {
     const modal = $('noticeModal');
     if (!modal) return;
+    editingNoticeId = null;
+    $('newNoticeText').value = '';
+    if ($('newNoticeType')) $('newNoticeType').value = 'notice-other';
+    if ($('newNoticeColor')) $('newNoticeColor').value = getNoticeTypeColor('notice-urgent');
+    if ($('newNoticeEmoji')) $('newNoticeEmoji').value = '📌';
+    if ($('selectedNoticeEmoji')) $('selectedNoticeEmoji').textContent = '📌';
+    updateNoticeColorPreview();
+    const title = modal.querySelector('h3');
+    const saveButton = modal.querySelector('.modal-actions .clay-btn-primary');
+    if (title) title.innerText = 'নোটিশ বোর্ড কন্ট্রোল';
+    if (saveButton) saveButton.lastChild.textContent = ' নোটিশ যুক্ত করুন';
     renderNoticeModalList();
     modal.style.display = 'flex';
 }
@@ -2711,6 +2859,7 @@ function openNoticeModal() {
 function closeNoticeModal() {
     const modal = $('noticeModal');
     if (modal) modal.style.display = 'none';
+    editingNoticeId = null;
 }
 
 function renderNoticeModalList() {
@@ -2723,9 +2872,9 @@ function renderNoticeModalList() {
     }
     state.notices.forEach((n, idx) => {
         list.innerHTML += `
-            <div class="notice-item-admin ${n.type}" style="margin-bottom:8px;">
-                <span style="flex:1; word-break:break-word;">${n.text}</span>
-                <button class="btn clay-btn clay-btn-danger" style="padding: 4px 10px; font-size: 11px; flex-shrink:0;" onclick="deleteNotice(${idx}); renderNoticeModalList();">ডিলিট</button>
+            <div class="notice-item-admin ${escapeHtml(n.type || 'notice-other')}" style="${noticeStyle(n)} margin-bottom:8px;">
+                <span style="flex:1; word-break:break-word;">${noticeTextHtml(n)}</span>
+                <span class="notice-admin-actions"><button class="btn clay-btn" style="padding: 4px 10px; font-size: 11px;" onclick="editNotice(${n.id})">এডিট</button><button class="btn clay-btn clay-btn-danger" style="padding: 4px 10px; font-size: 11px; flex-shrink:0;" onclick="deleteNotice(${idx}); renderNoticeModalList();">ডিলিট</button></span>
             </div>
         `;
     });

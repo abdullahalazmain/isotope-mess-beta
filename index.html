@@ -154,7 +154,14 @@
         <div style="padding: 4px 0 12px 0;">
             <div class="input-group">
                 <label>নতুন নোটিশ লিখুন:</label>
-                <textarea id="newNoticeText" class="drawer-input" rows="3" placeholder="নোটিশের তথ্য লিখুন..." style="resize: vertical;"></textarea>
+                <div class="notice-composer">
+                    <button type="button" class="notice-emoji-trigger" onclick="toggleNoticeEmojiPicker(event)" title="ইমোজি নির্বাচন করুন" aria-label="ইমোজি নির্বাচন করুন">
+                        <span id="selectedNoticeEmoji">📌</span><span class="notice-emoji-chevron">▾</span>
+                    </button>
+                    <input type="hidden" id="newNoticeEmoji" value="📌">
+                    <textarea id="newNoticeText" class="drawer-input" rows="3" placeholder="নোটিশের তথ্য লিখুন..." style="resize: vertical;"></textarea>
+                    <div id="noticeEmojiPicker" class="notice-emoji-picker" role="listbox" aria-label="ইমোজি নির্বাচন করুন"></div>
+                </div>
             </div>
             <div class="input-group" style="margin-top: 12px;">
                 <label>নোটিশ টাইপ:</label>
@@ -164,9 +171,16 @@
                     <option value="notice-info">💡 সাধারণ/তথ্য (হলুদ)</option>
                     <option value="notice-meeting">👥 মিটিং/সভা (বেগুনি)</option>
                     <option value="notice-bazar">🛒 বাজার/মিল (সায়ান)</option>
+                    <option value="notice-complaint">⚠️ অভিযোগ (কমলা)</option>
                     <option value="notice-other">📌 অন্যান্য (ধূসর)</option>
                 </select>
             </div>
+            <div class="notice-color-control">
+                <label for="newNoticeColor">নোটিশের রং:</label>
+                <input type="color" id="newNoticeColor" value="#ef4444" class="notice-color-input" title="নোটিশের রং নির্বাচন করুন">
+                <span id="noticeColorValue">#EF4444</span>
+            </div>
+            <div class="notice-format-hint">গুরুত্বপূর্ণ শব্দ bold করতে লিখুন: <strong>**গুরুত্বপূর্ণ**</strong></div>
         </div>
         <div class="modal-actions" style="justify-content: flex-end; gap: 10px;">
             <button class="btn clay-btn" onclick="closeNoticeModal()">বাতিল</button>
@@ -184,7 +198,7 @@
     <div class="modal-content clay-card" style="max-width: 580px; text-align: left;">
         <div class="admin-modal-header">
             <div class="admin-modal-title">
-                <svg class="svg-icon primary-color" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                <svg class="svg-icon primary-color monochrome-heading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                 <h3>মেম্বার ম্যানেজমেন্ট কন্ট্রোল</h3>
             </div>
             <button class="modal-close-btn" onclick="closeMemberManagerModal()" title="বন্ধ করুন">
@@ -195,10 +209,11 @@
         <!-- Tabs Header -->
         <div class="mgr-tab-bar">
             <button id="tabBtnMemberList" class="mgr-tab-btn active-tab" onclick="showMemberTab('list')">
-                👥 সদস্যদের তালিকা
+                সদস্যদের তালিকা
             </button>
             <button id="tabBtnMemberAdd" class="mgr-tab-btn" onclick="showMemberTab('add')">
-                ➕ নতুন মেম্বার যুক্ত করুন
+                <svg class="svg-icon monochrome-control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                নতুন মেম্বার যুক্ত করুন
             </button>
         </div>
 
@@ -253,7 +268,7 @@
     <div class="modal-content clay-card" style="max-width: 440px; text-align: left;">
         <div class="admin-modal-header">
             <div class="admin-modal-title">
-                <svg class="svg-icon" style="fill:#dc2626;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <svg class="svg-icon monochrome-heading-icon" style="fill:#dc2626;" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                 <h3 style="color:#dc2626;">মেম্বার রিলিজ / রিমুভ</h3>
             </div>
             <button class="modal-close-btn" onclick="closeRemoveMemberModal()" title="বন্ধ করুন">
@@ -309,7 +324,7 @@
         </div>
         <div style="padding: 4px 0;">
             <div class="prev-adj-info-box" style="background: rgba(220, 38, 38, 0.06); border-color: rgba(220, 38, 38, 0.2); margin-bottom: 14px;">
-                <span class="prev-adj-info-icon" style="color:#dc2626;">⚠️</span>
+                <span class="prev-adj-info-icon" style="color:#dc2626;" aria-hidden="true">!</span>
                 <div style="color:#7f1d1d; font-size:12px; line-height: 1.4;">
                     <strong>সতর্কতা:</strong> এটি চলতি বছরের সকল মাসের মিল, জমা ও ট্রানজেকশন ক্লিয়ার করে নতুন বছরের জন্য ডাটাবেস প্রস্তুত করবে। মেম্বার প্রোফাইল ও এডমিন পাসওয়ার্ড অপরিবর্তিত থাকবে।
                 </div>
@@ -319,10 +334,12 @@
                 <label style="font-size:12.5px; font-weight:700; color:#1e293b; display:block; margin-bottom:8px;">ধাপ ১: বাধ্যতামূলক ব্যাকআপ ডাউনলোড করুন</label>
                 <div style="display:flex; gap:8px;">
                     <button class="btn clay-btn" style="flex:1; font-size:12px;" onclick="downloadResetBackup('excel')">
-                        📊 Excel ব্যাকআপ
+                        <svg class="svg-icon monochrome-control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm1 7V3.5L18.5 9H15zM8 13h2v5H8v-5zm3 2h2v3h-2v-3zm3-4h2v7h-2v-7z"/></svg>
+                        Excel ব্যাকআপ
                     </button>
                     <button class="btn clay-btn" style="flex:1; font-size:12px;" onclick="downloadResetBackup('json')">
-                        📁 JSON ব্যাকআপ
+                        <svg class="svg-icon monochrome-control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm1 7V3.5L18.5 9H15zM9 12h2v2H9v-2zm4 0h2v2h-2v-2zM9 16h6v2H9v-2z"/></svg>
+                        JSON ব্যাকআপ
                     </button>
                 </div>
                 <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
