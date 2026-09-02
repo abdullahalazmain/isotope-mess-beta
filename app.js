@@ -1901,7 +1901,7 @@ function renderTransposedTable(mealRate, perHead) {
         { label: 'মিল খরচ (BDT)', calc: (m) => (Number(m.meals || 0) * mealRate).toFixed(2) },
         { label: 'গত মাসের বকেয়া (BDT)', key: 'prevAdj', isRawFormatted: true },
         {
-            labelHtml: `অন্যান্য <span class="adj-info-wrapper"><button type="button" class="adj-info-btn" onclick="toggleAdjInfoTooltip(event)" title="বিস্তারিত বিবরণ" aria-label="বিস্তারিত বিবরণ"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 17h2v-6h-2v6zm0-8h2V7h-2v2zm1-7C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg></button><span class="adj-info-badge" style="display:none;">${escapeHtml(state.customAdjLabel || "এডজাস্টমেন্ট")}</span></span> (BDT)`,
+            labelHtml: `অন্যান্য <span class="adj-info-wrapper"><button type="button" class="adj-info-btn" onclick="toggleAdjInfoTooltip(event)" title="বিস্তারিত বিবরণ" aria-label="বিস্তারিত বিবরণ"><svg class="adj-info-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="8" r="1.2" fill="currentColor"/><path d="M12 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><span class="adj-info-badge" style="display:none;">${escapeHtml(state.customAdjLabel || "এডজাস্টমেন্ট")}</span></span> (BDT)`,
             key: 'fridgeAdj',
             isRawFormatted: true
         },
@@ -2276,7 +2276,7 @@ function renderMemberEditForm() {
                     <input type="number" id="single_mem_rent" class="drawer-input" value="${m.rent || 0}">
                 </div>
                 <div class="input-group">
-                    <label>অন্যান্য <span class="adj-info-wrapper"><button type="button" class="adj-info-btn" onclick="toggleAdjInfoTooltip(event)" title="বিবরণ দেখুন" aria-label="বিবরণ দেখুন"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 17h2v-6h-2v6zm0-8h2V7h-2v2zm1-7C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg></button><span class="adj-info-badge" style="display:none;">${escapeHtml(state.customAdjLabel || "এডজাস্টমেন্ট")}</span></span>:</label>
+                    <label>অন্যান্য <span class="adj-info-wrapper"><button type="button" class="adj-info-btn" onclick="toggleAdjInfoTooltip(event)" title="বিবরণ দেখুন" aria-label="বিবরণ দেখুন"><svg class="adj-info-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="8" r="1.2" fill="currentColor"/><path d="M12 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><span class="adj-info-badge" style="display:none;">${escapeHtml(state.customAdjLabel || "এডজাস্টমেন্ট")}</span></span>:</label>
                     <input type="number" id="single_mem_fridge" class="drawer-input" value="${m.fridgeAdj || 0}">
                 </div>
                 ${prevAdjFieldHtml}
