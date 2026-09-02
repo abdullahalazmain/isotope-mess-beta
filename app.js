@@ -7,9 +7,28 @@
 // ---------- Constants ----------
 const FIREBASE_FIRESTORE_URL = "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
 const DEFAULT_ADMIN_PASSWORD = "@12azmain";
-const DEFAULT_CUSTOM_ADJ_LABEL = "ফ্রিজ সমন্বয়";
+const LEGACY_ADMIN_PASSWORDS = ["@12azmain", "isotope@123"];
+const DEFAULT_CUSTOM_ADJ_LABEL = "অন্যান্য";
 const CURRENT_YEAR = 2026;
 const MESS_ID = "ISO-MESS-01";
+
+function getDataNamespace() {
+    return window.IS_DEV_MODE ? "dev" : "prod";
+}
+
+function getDataPath(...segments) {
+    const ns = getDataNamespace();
+    return [ns, ...segments].filter(Boolean);
+}
+
+function isValidAdminPassword(candidate, allowLegacy = true) {
+    const clean = String(candidate || '').trim();
+    if (!clean) return false;
+    if (state && state.adminPassword && clean === state.adminPassword) return true;
+    if (clean === DEFAULT_ADMIN_PASSWORD) return true;
+    if (allowLegacy && LEGACY_ADMIN_PASSWORDS.includes(clean)) return true;
+    return false;
+}
 
 // Forward declare state variable to avoid Temporal Dead Zone in helper functions
 var state = null;
@@ -20,52 +39,23 @@ const BENGALI_MONTH_NAMES = [
     "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"
 ];
 
-// Baseline Data (August 2026)
-const AUGUST_FIXED_COSTS = {
-    electricity: 1500,
-    gas: 1800,
-    waterBottleCount: 40,
-    waterBottlePrice: 20,
-    waterBill: 800,
-    wifi: 700,
-    khala: 2500,
-    waste: 70
+// Fresh-start baseline: completely empty. No demo members, no sample notices,
+// and no default transactions. Admin fills everything from zero.
+const EMPTY_FIXED_COSTS = {
+    electricity: 0,
+    gas: 0,
+    waterBottleCount: 0,
+    waterBottlePrice: 0,
+    waterBill: 0,
+    wifi: 0,
+    khala: 0,
+    waste: 0
 };
 
-// Initial Master Members Registry with Professional Dynamic IDs (e.g. ISO-202601-001)
-// Default values should be blank/zero until the admin assigns them manually.
-const INITIAL_MASTER_MEMBERS = [
-    { id: "ISO-202601-001", name: "আজমাইন", joinMonth: "2026-01", leaveMonth: null, defaultRent: 0, phone: "", isActive: true },
-    { id: "ISO-202601-002", name: "রিয়াজ", joinMonth: "2026-01", leaveMonth: null, defaultRent: 0, phone: "", isActive: true },
-    { id: "ISO-202601-003", name: "সাকিব", joinMonth: "2026-01", leaveMonth: null, defaultRent: 0, phone: "", isActive: true },
-    { id: "ISO-202601-004", name: "ওমর", joinMonth: "2026-01", leaveMonth: null, defaultRent: 0, phone: "", isActive: true },
-    { id: "ISO-202601-005", name: "নাফিজ", joinMonth: "2026-01", leaveMonth: null, defaultRent: 0, phone: "", isActive: true },
-    { id: "ISO-202601-006", name: "ফারেছ", joinMonth: "2026-01", leaveMonth: null, defaultRent: 0, phone: "", isActive: true }
-];
-
-const AUGUST_MEMBERS = [
-    { id: "ISO-202601-001", name: "আজমাইন", meals: 0, bazarDeposit: 0, rent: 0, prevAdj: 0, fridgeAdj: 0 },
-    { id: "ISO-202601-002", name: "রিয়াজ", meals: 0, bazarDeposit: 0, rent: 0, prevAdj: 0, fridgeAdj: 0 },
-    { id: "ISO-202601-003", name: "সাকিব", meals: 0, bazarDeposit: 0, rent: 0, prevAdj: 0, fridgeAdj: 0 },
-    { id: "ISO-202601-004", name: "ওমর", meals: 0, bazarDeposit: 0, rent: 0, prevAdj: 0, fridgeAdj: 0 },
-    { id: "ISO-202601-005", name: "নাফিজ", meals: 0, bazarDeposit: 0, rent: 0, prevAdj: 0, fridgeAdj: 0 },
-    { id: "ISO-202601-006", name: "ফারেছ", meals: 0, bazarDeposit: 0, rent: 0, prevAdj: 0, fridgeAdj: 0 }
-];
-
-const AUGUST_NOTICES = [
-    { id: 1, text: "🚨 জুলাই ২০২৬ বিল পরিশোধের সময়সীমা: আগামী ৫ তারিখের মধ্যে ইউটিলিটি ও ৮ তারিখের মধ্যে বাসা ভাড়া দিতে হবে। মোট বাসা ভাড়া ১২,০০০ টাকা।", type: "notice-urgent" },
-    { id: 2, text: "🌱 অগ্রিম ইউটিলিটি বিল: কারেন্ট ৳১৫০০, গ্যাস ৳১৮০০, পানি ৳৮০০, ওয়াইফাই ৳৭০০ এবং বর্তমান খালার বিল ৳২৫০০, ময়লা ৳৭০ হিসাবভুক্ত করা হয়েছে।", type: "notice-advance" },
-    { id: 3, text: "🧊 ফ্রিজ বহনের BDT 600 হিসাব: সাকিব পরিশোধ করেছেন (ওমর বাদে বাকি ৫ জন BDT 120 করে শেয়ার করবেন)।", type: "notice-info" },
-    { id: 4, text: "👥 জরুরি মিটিং: আগামী শুক্রবার জুম্মার নামাজের পর মেসের হিসাব নিকেশ নিয়ে বৈঠক হবে।", type: "notice-meeting" },
-    { id: 5, text: "🛒 বাজার আপডেট: প্রতিদিনের বাজার তালিকা এবং মিল এন্ট্রি সময়মতো সম্পন্ন করুন।", type: "notice-bazar" },
-    { id: 6, text: "📌 সাধারণ নির্দেশনা: মেসের কমন স্পেস পরিষ্কার পরিচ্ছন্ন রাখুন।", type: "notice-other" }
-];
-
-const AUGUST_TRANSACTIONS = [
-    { id: 101, date: "01/08/2026, 10:30 AM", member: "আজমাইন", note: "প্রাথমিক বাজার জমা", amount: 2451 },
-    { id: 102, date: "02/08/2026, 02:15 PM", member: "রিয়াজ", note: "প্রাথমিক বাজার জমা", amount: 2299 },
-    { id: 103, date: "03/08/2026, 06:40 PM", member: "ফারেছ", note: "প্রাথমিক বাজার জমা", amount: 3391 }
-];
+const INITIAL_MASTER_MEMBERS = [];
+const EMPTY_MEMBERS = [];
+const EMPTY_NOTICES = [];
+const EMPTY_TRANSACTIONS = [];
 
 // ---------- Dynamic Member ID Generator ----------
 function generateMemberId(joinMonth, serialNumber) {
@@ -115,31 +105,36 @@ function createEmptyMonthData(monthKey = "2026-08") {
     };
 }
 
-// Initial multi-month dictionary for current year (2026)
+// Initial multi-month dictionary for a given year.
 // Start empty and let the admin assign values month-by-month.
-function createInitialMonthsData() {
+function createInitialMonthsData(year = CURRENT_YEAR) {
     const months = {};
     for (let m = 1; m <= 12; m++) {
-        const key = `${CURRENT_YEAR}-${String(m).padStart(2, '0')}`;
+        const key = `${year}-${String(m).padStart(2, '0')}`;
         months[key] = createEmptyMonthData(key);
     }
     return months;
 }
 
+function getCurrentResetYear() {
+    const activeYear = Number((state && state.activeMonth ? state.activeMonth : `${CURRENT_YEAR}-01`).split('-')[0]);
+    return Number.isFinite(activeYear) ? activeYear : CURRENT_YEAR;
+}
+
 // ---------- State ----------
-const emptyAugustMonth = createEmptyMonthData("2026-08");
+const emptyStartMonth = createEmptyMonthData("2026-01");
 state = {
     isAdmin: false,
     adminPassword: DEFAULT_ADMIN_PASSWORD,
     customAdjLabel: DEFAULT_CUSTOM_ADJ_LABEL,
-    activeMonth: "2026-08",
-    masterMembers: INITIAL_MASTER_MEMBERS.map(m => ({ ...m })),
-    months: createInitialMonthsData(),
+    activeMonth: "2026-01",
+    masterMembers: [],
+    months: createInitialMonthsData(CURRENT_YEAR),
     // Active month view mirrors:
-    fixedCosts: { ...emptyAugustMonth.fixedCosts },
-    members: emptyAugustMonth.members.map(m => ({ ...m })),
-    notices: emptyAugustMonth.notices.map(n => ({ ...n })),
-    transactions: emptyAugustMonth.transactions.map(t => ({ ...t }))
+    fixedCosts: { ...emptyStartMonth.fixedCosts },
+    members: emptyStartMonth.members.map(m => ({ ...m })),
+    notices: [],
+    transactions: []
 };
 
 let confirmCallback = null;
@@ -156,6 +151,8 @@ async function resetFirestoreDatabase() {
     const deletedPaths = [];
     const rootCollections = [
         "appConfig",
+        "dev",
+        "prod",
         "messes",
         "settings",
         "members",
@@ -175,36 +172,25 @@ async function resetFirestoreDatabase() {
                 deletedPaths.push(docSnap.ref.path);
             }
         } catch (err) {
-            // Collection may not exist yet in a freshly initialized database.
+            // Ignore if collection does not exist.
         }
     }
 
     try {
-        const monthSnap = await getDocs(collection(window.firebaseDb, "months"));
-        for (const monthDoc of monthSnap.docs) {
-            const nestedCollections = [
-                "members",
-                "notices",
-                "transactions",
-                "dailyMeals",
-                "dailyBazar",
-                "ledger"
-            ];
-
-            for (const nestedName of nestedCollections) {
-                try {
-                    const nestedSnap = await getDocs(collection(window.firebaseDb, "months", monthDoc.id, nestedName));
-                    for (const nestedDoc of nestedSnap.docs) {
-                        await deleteDoc(nestedDoc.ref);
-                        deletedPaths.push(nestedDoc.ref.path);
-                    }
-                } catch (err) {
-                    // Ignore absent nested collections.
+        for (const namespace of ["dev", "prod"]) {
+            const nsSnap = await getDocs(collection(window.firebaseDb, namespace));
+            for (const docSnap of nsSnap.docs) {
+                const nested = await getDocs(collection(window.firebaseDb, namespace, docSnap.id));
+                for (const nestedDoc of nested.docs) {
+                    await deleteDoc(nestedDoc.ref);
+                    deletedPaths.push(nestedDoc.ref.path);
                 }
+                await deleteDoc(docSnap.ref);
+                deletedPaths.push(docSnap.ref.path);
             }
         }
     } catch (err) {
-        // Ignore absent month tree.
+        // Ignore if namespace is not present.
     }
 
     return { cleared: true, deletedPaths };
@@ -218,75 +204,86 @@ async function bootstrapEmptyFirestoreTree() {
 
     const { doc, setDoc } = await getFirestoreModule();
     const now = new Date().toISOString();
+    const ns = getDataNamespace();
+    const root = getDataPath();
 
-    await setDoc(doc(window.firebaseDb, "appConfig", "schema"), {
+    await setDoc(doc(window.firebaseDb, ...root, "appConfig", "schema"), {
         schemaVersion: FIRESTORE_SCHEMA_VERSION,
         defaultCurrency: "BDT",
         defaultLocale: "bn",
         appName: "Isotope Mess",
         activeMessId: MESS_ID,
+        environment: ns,
         status: "empty",
         createdAt: now,
         updatedAt: now
     });
 
-    await setDoc(doc(window.firebaseDb, "messes", MESS_ID), {
+    await setDoc(doc(window.firebaseDb, ...root, "messes", MESS_ID), {
         messId: MESS_ID,
         name: "Isotope Mess",
         status: "empty",
         hasSeedData: false,
+        environment: ns,
         schemaVersion: FIRESTORE_SCHEMA_VERSION,
         createdAt: now,
         updatedAt: now
     });
 
-    await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "settings", "primary"), {
+    await setDoc(doc(window.firebaseDb, ...root, "messes", MESS_ID, "settings", "primary"), {
         currency: "BDT",
         locale: "bn",
         adminPassword: DEFAULT_ADMIN_PASSWORD,
         customAdjLabel: DEFAULT_CUSTOM_ADJ_LABEL,
         activeMonth: "2026-01",
         status: "empty",
+        environment: ns,
         schemaVersion: FIRESTORE_SCHEMA_VERSION,
         createdAt: now,
         updatedAt: now
     });
 
-    await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "members", "index"), {
+    await setDoc(doc(window.firebaseDb, ...root, "messes", MESS_ID, "members", "registry"), {
         totalMembers: 0,
+        list: [],
         status: "empty",
+        environment: ns,
         schemaVersion: FIRESTORE_SCHEMA_VERSION,
         updatedAt: now
     });
 
-    await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "months", "index"), {
+    await setDoc(doc(window.firebaseDb, ...root, "messes", MESS_ID, "months", "index"), {
         totalMonths: 0,
+        monthKeys: [],
         status: "empty",
+        environment: ns,
         schemaVersion: FIRESTORE_SCHEMA_VERSION,
         updatedAt: now
     });
 
-    await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "notices", "index"), {
+    await setDoc(doc(window.firebaseDb, ...root, "messes", MESS_ID, "notices", "index"), {
         totalNotices: 0,
         status: "empty",
+        environment: ns,
         schemaVersion: FIRESTORE_SCHEMA_VERSION,
         updatedAt: now
     });
 
-    await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "transactions", "index"), {
+    await setDoc(doc(window.firebaseDb, ...root, "messes", MESS_ID, "transactions", "index"), {
         totalTransactions: 0,
         status: "empty",
+        environment: ns,
         schemaVersion: FIRESTORE_SCHEMA_VERSION,
         updatedAt: now
     });
 
-    return { bootstrapped: true, schemaVersion: FIRESTORE_SCHEMA_VERSION };
+    return { bootstrapped: true, schemaVersion: FIRESTORE_SCHEMA_VERSION, environment: ns };
 }
 
 function resetLocalAppStateToEmpty() {
     const emptyMonth = createEmptyMonthData("2026-01");
     state.masterMembers = [];
-    state.months = {};
+    state.months = createInitialMonthsData(CURRENT_YEAR);
     state.activeMonth = "2026-01";
     state.customAdjLabel = DEFAULT_CUSTOM_ADJ_LABEL;
     state.adminPassword = DEFAULT_ADMIN_PASSWORD;
@@ -296,7 +293,7 @@ function resetLocalAppStateToEmpty() {
     state.transactions = [];
     localStorage.setItem('isotope_mess_data_v3', JSON.stringify({
         masterMembers: [],
-        months: {},
+        months: state.months,
         activeMonth: "2026-01",
         adminPassword: DEFAULT_ADMIN_PASSWORD,
         customAdjLabel: DEFAULT_CUSTOM_ADJ_LABEL,
@@ -413,11 +410,12 @@ async function saveData() {
     try {
         const { doc, setDoc } = await getFirestoreModule();
         const mKey = state.activeMonth;
-        const messRef = doc(window.firebaseDb, "messes", MESS_ID);
-        const settingsRef = doc(window.firebaseDb, "messes", MESS_ID, "settings", "primary");
-        const registryRef = doc(window.firebaseDb, "messes", MESS_ID, "members", "registry");
-        const monthRef = doc(window.firebaseDb, "messes", MESS_ID, "months", mKey);
-        const fixedRef = doc(window.firebaseDb, "messes", MESS_ID, "months", mKey, "meta", "fixedCosts");
+        const basePath = getDataPath();
+        const messRef = doc(window.firebaseDb, ...basePath, "messes", MESS_ID);
+        const settingsRef = doc(window.firebaseDb, ...basePath, "messes", MESS_ID, "settings", "primary");
+        const registryRef = doc(window.firebaseDb, ...basePath, "messes", MESS_ID, "members", "registry");
+        const monthRef = doc(window.firebaseDb, ...basePath, "messes", MESS_ID, "months", mKey);
+        const fixedRef = doc(window.firebaseDb, ...basePath, "messes", MESS_ID, "months", mKey, "meta", "fixedCosts");
         const now = new Date().toISOString();
 
         await setDoc(messRef, {
@@ -425,6 +423,7 @@ async function saveData() {
             name: "Isotope Mess",
             status: "active",
             hasSeedData: state.masterMembers.length > 0 || state.members.length > 0,
+            environment: getDataNamespace(),
             schemaVersion: FIRESTORE_SCHEMA_VERSION,
             updatedAt: now
         }, { merge: true });
@@ -437,6 +436,7 @@ async function saveData() {
             customAdjLabel: state.customAdjLabel || DEFAULT_CUSTOM_ADJ_LABEL,
             messId: MESS_ID,
             version: "3.0",
+            environment: getDataNamespace(),
             schemaVersion: FIRESTORE_SCHEMA_VERSION,
             updatedAt: now
         }, { merge: true });
@@ -444,6 +444,7 @@ async function saveData() {
         await setDoc(registryRef, {
             list: state.masterMembers,
             totalMembers: state.masterMembers.length,
+            environment: getDataNamespace(),
             updatedAt: now
         }, { merge: true });
 
@@ -454,6 +455,7 @@ async function saveData() {
             members: state.members,
             notices: state.notices,
             transactions: state.transactions,
+            environment: getDataNamespace(),
             schemaVersion: FIRESTORE_SCHEMA_VERSION,
             updatedAt: now
         }, { merge: true });
@@ -461,30 +463,34 @@ async function saveData() {
         await setDoc(fixedRef, {
             ...state.fixedCosts,
             customAdjLabel: state.customAdjLabel || "ফ্রিজ ও অন্যান্য",
+            environment: getDataNamespace(),
             schemaVersion: FIRESTORE_SCHEMA_VERSION,
             updatedAt: now
         }, { merge: true });
 
         for (let member of state.members) {
             const docId = (member.id || member.name || "member").replace(/\s+/g, '_');
-            await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "months", mKey, "members", docId), {
+            await setDoc(doc(window.firebaseDb, ...basePath, "messes", MESS_ID, "months", mKey, "members", docId), {
                 ...member,
+                environment: getDataNamespace(),
                 schemaVersion: FIRESTORE_SCHEMA_VERSION,
                 updatedAt: now
             }, { merge: true });
         }
 
         for (let notice of state.notices) {
-            await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "months", mKey, "notices", String(notice.id)), {
+            await setDoc(doc(window.firebaseDb, ...basePath, "messes", MESS_ID, "months", mKey, "notices", String(notice.id)), {
                 ...notice,
+                environment: getDataNamespace(),
                 schemaVersion: FIRESTORE_SCHEMA_VERSION,
                 updatedAt: now
             }, { merge: true });
         }
 
         for (let txn of state.transactions) {
-            await setDoc(doc(window.firebaseDb, "messes", MESS_ID, "months", mKey, "transactions", String(txn.id)), {
+            await setDoc(doc(window.firebaseDb, ...basePath, "messes", MESS_ID, "months", mKey, "transactions", String(txn.id)), {
                 ...txn,
+                environment: getDataNamespace(),
                 schemaVersion: FIRESTORE_SCHEMA_VERSION,
                 updatedAt: now
             }, { merge: true });
@@ -498,9 +504,10 @@ async function loadFromFirestore() {
     if (!window.firebaseDb) return;
     try {
         const { doc, getDoc } = await getFirestoreModule();
+        const basePath = getDataPath();
 
         try {
-            const configSnap = await getDoc(doc(window.firebaseDb, "messes", MESS_ID, "settings", "primary"));
+            const configSnap = await getDoc(doc(window.firebaseDb, ...basePath, "messes", MESS_ID, "settings", "primary"));
             if (configSnap && configSnap.exists()) {
                 const configData = configSnap.data();
                 if (configData.adminPassword) state.adminPassword = configData.adminPassword;
@@ -512,7 +519,7 @@ async function loadFromFirestore() {
         }
 
         try {
-            const registrySnap = await getDoc(doc(window.firebaseDb, "messes", MESS_ID, "members", "registry"));
+            const registrySnap = await getDoc(doc(window.firebaseDb, ...basePath, "messes", MESS_ID, "members", "registry"));
             if (registrySnap && registrySnap.exists() && Array.isArray(registrySnap.data().list)) {
                 state.masterMembers = registrySnap.data().list;
             }
@@ -534,9 +541,10 @@ async function loadMonthDataFromFirestore(mKey) {
     if (!window.firebaseDb) return;
     try {
         const { doc, getDoc, collection, getDocs } = await getFirestoreModule();
+        const basePath = getDataPath();
 
         try {
-            const monthSnap = await getDoc(doc(window.firebaseDb, "messes", MESS_ID, "months", mKey));
+            const monthSnap = await getDoc(doc(window.firebaseDb, ...basePath, "messes", MESS_ID, "months", mKey));
             if (monthSnap && monthSnap.exists()) {
                 const mDocData = monthSnap.data();
                 if (mDocData.fixedCosts) state.fixedCosts = { ...mDocData.fixedCosts };
@@ -561,7 +569,7 @@ async function loadMonthDataFromFirestore(mKey) {
 
         let fixedLoaded = false;
         try {
-            const fixedSnap = await getDoc(doc(window.firebaseDb, "messes", MESS_ID, "months", mKey, "meta", "fixedCosts"));
+            const fixedSnap = await getDoc(doc(window.firebaseDb, ...basePath, "messes", MESS_ID, "months", mKey, "meta", "fixedCosts"));
             if (fixedSnap && fixedSnap.exists()) {
                 const fData = fixedSnap.data();
                 state.fixedCosts = { ...fData };
@@ -584,7 +592,7 @@ async function loadMonthDataFromFirestore(mKey) {
 
         let membersLoaded = false;
         try {
-            const memSnap = await getDocs(collection(window.firebaseDb, "messes", MESS_ID, "months", mKey, "members"));
+            const memSnap = await getDocs(collection(window.firebaseDb, ...basePath, "messes", MESS_ID, "months", mKey, "members"));
             if (memSnap && !memSnap.empty) {
                 const membersList = [];
                 memSnap.forEach(d => membersList.push(d.data()));
@@ -613,7 +621,7 @@ async function loadMonthDataFromFirestore(mKey) {
 
         let noticesLoaded = false;
         try {
-            const notSnap = await getDocs(collection(window.firebaseDb, "messes", MESS_ID, "months", mKey, "notices"));
+            const notSnap = await getDocs(collection(window.firebaseDb, ...basePath, "messes", MESS_ID, "months", mKey, "notices"));
             if (notSnap && !notSnap.empty) {
                 const noticesList = [];
                 notSnap.forEach(d => noticesList.push(d.data()));
@@ -634,7 +642,7 @@ async function loadMonthDataFromFirestore(mKey) {
 
         let txnsLoaded = false;
         try {
-            const txnSnap = await getDocs(collection(window.firebaseDb, "messes", MESS_ID, "months", mKey, "transactions"));
+            const txnSnap = await getDocs(collection(window.firebaseDb, ...basePath, "messes", MESS_ID, "months", mKey, "transactions"));
             if (txnSnap && !txnSnap.empty) {
                 const txnsList = [];
                 txnSnap.forEach(d => txnsList.push(d.data()));
@@ -933,50 +941,55 @@ function downloadResetBackup(type) {
     showToast("ব্যাকআপ ডাউনলোড সম্পন্ন! এখন রিসেট কনফার্ম করতে পারবেন।", "info");
 }
 
+function resetYearTo(targetYear) {
+    const year = Number(targetYear) || getCurrentResetYear();
+    state.months = createInitialMonthsData(year);
+    state.activeMonth = `${year}-01`;
+    const janData = state.months[`${year}-01`];
+    state.fixedCosts = { ...janData.fixedCosts };
+    state.members = janData.members.map(m => ({ ...m }));
+    state.notices = [];
+    state.transactions = [];
+    state.customAdjLabel = DEFAULT_CUSTOM_ADJ_LABEL;
+    state.masterMembers = [];
+    persistLocally();
+    updateMonthDisplayUI();
+    calculateAll();
+    if (window.firebaseDb) {
+        saveData();
+    }
+    return { year, monthKey: state.activeMonth };
+}
+
 function submitResetYear() {
     const pass = textVal('resetYearAdminPass');
     const confirmCode = textVal('resetYearConfirmCode').trim().toUpperCase();
     const chk = $('resetBackupCheckbox');
+    const targetYear = getCurrentResetYear();
 
     if (!chk || !chk.checked) {
         showToast("ডাটা রিসেট করার পূর্বে অবশ্যই ব্যাকআপ ডাউনলোড করে টিক দিন!", "error");
         return;
     }
 
-    const correctPass = state.adminPassword || DEFAULT_ADMIN_PASSWORD;
-    if (pass !== correctPass && pass !== "@12azmain" && pass !== "isotope@12azmain") {
+    if (!isValidAdminPassword(pass)) {
         showToast("এডমিন পাসওয়ার্ডটি সঠিক নয়!", "error");
         return;
     }
 
-    if (confirmCode !== "RESET 2026" && confirmCode !== "RESET") {
-        showToast("নিশ্চিতকরণ ঘরে 'RESET 2026' লিখুন!", "error");
+    const expectedConfirm = `RESET ${targetYear}`;
+    if (confirmCode !== expectedConfirm && confirmCode !== "RESET") {
+        showToast(`নিশ্চিতকরণ ঘরে '${expectedConfirm}' লিখুন!`, "error");
         return;
     }
 
     showConfirmModal(
         "চূড়ান্ত ডাটা রিসেট নিশ্চিতকরণ",
-        "আপনি কি নিশ্চিত যে সকল মাসের মিল, জমা ও ট্রানজেকশন ডাটা রিসেট করে নতুন বছরের সূচনা করতে চান? মেম্বার লিস্ট ও এডমিন পাসওয়ার্ড অক্ষত থাকবে।",
+        `আপনি কি নিশ্চিত যে ${targetYear} বছরের জন্য সকল মাসের মিল, জমা ও ট্রানজেকশন ডাটা রিসেট করে প্রথমিক শূন্য অবস্থা তৈরি করতে চান?`,
         async () => {
-            // Re-initialize all months cleanly
-            state.months = createInitialMonthsData();
-            for (let m = 1; m <= 12; m++) {
-                const key = `${CURRENT_YEAR}-${String(m).padStart(2, '0')}`;
-                state.months[key] = createEmptyMonthData(key);
-            }
-            state.activeMonth = "2026-01";
-
-            const janData = state.months["2026-01"];
-            state.fixedCosts = { ...janData.fixedCosts };
-            state.members = janData.members.map(m => ({ ...m }));
-            state.notices = [];
-            state.transactions = [];
-
+            resetYearTo(targetYear);
             closeResetYearModal();
-            saveData();
-            updateMonthDisplayUI();
-            calculateAll();
-            showToast("নতুন বছরের জন্য মেস ডাটাবেস সফলভাবে রিসেট ও প্রস্তুত করা হয়েছে!", "success");
+            showToast(`${targetYear} বছরের জন্য নতুন ফ্রেশ ডাটাবেস প্রস্তুত করা হয়েছে!`, "success");
         }
     );
 }
@@ -1605,7 +1618,7 @@ function renderDrawerInputs() {
             <div class="input-group"><label>ওয়াইফাই বিল (BDT)</label><input type="number" id="inp_wifi" class="drawer-input" value="${state.fixedCosts.wifi}"></div>
             <div class="input-group"><label>খালার বিল (BDT)</label><input type="number" id="inp_khala" class="drawer-input" value="${state.fixedCosts.khala}"></div>
             <div class="input-group"><label>ময়লার বিল (BDT)</label><input type="number" id="inp_waste" class="drawer-input" value="${state.fixedCosts.waste}"></div>
-            <div class="input-group input-group-full"><label>অন্যান্য এডজাস্টমেন্টের নাম:</label><input type="text" id="customAdjLabelInput" class="drawer-input" value="${state.customAdjLabel || 'ফ্রিজ ও অন্যান্য'}"></div>
+            <div class="input-group input-group-full"><label>অন্যান্য এডজাস্টমেন্টের নাম:</label><input type="text" id="customAdjLabelInput" class="drawer-input" value="${state.customAdjLabel || 'অন্যান্য'}"></div>
         `;
     }
 
@@ -2283,9 +2296,8 @@ function togglePasswordVisibility(inputId, iconId) {
 
 function verifyAdmin() {
     const pass = textVal('adminPassword');
-    const correctPass = state.adminPassword || DEFAULT_ADMIN_PASSWORD;
 
-    if (pass === correctPass || pass === "@12azmain" || pass === "isotope@12azmain") {
+    if (isValidAdminPassword(pass)) {
         state.isAdmin = true;
         closeAdminModal();
         updateAdminUIState();
@@ -2340,9 +2352,8 @@ function showChangePassView(isChanging) {
 function submitPasswordChange() {
     const currPass = textVal('currAdminPass');
     const newPass = textVal('newAdminPass');
-    const correctPass = state.adminPassword || DEFAULT_ADMIN_PASSWORD;
 
-    if (currPass !== correctPass && currPass !== "@12azmain" && currPass !== "isotope@12azmain") {
+    if (!isValidAdminPassword(currPass)) {
         showToast("বর্তমান পাসওয়ার্ডটি সঠিক নয়!", "error");
         return;
     }
@@ -2368,27 +2379,44 @@ function initApp() {
     if (localData) {
         try {
             const parsed = JSON.parse(localData);
-            if (parsed && typeof parsed === 'object') {
-                if (parsed.masterMembers && Array.isArray(parsed.masterMembers)) {
-                    state.masterMembers = parsed.masterMembers;
-                }
-                if (parsed.months) state.months = parsed.months;
-                if (parsed.adminPassword) state.adminPassword = parsed.adminPassword;
-                if (parsed.customAdjLabel) state.customAdjLabel = parsed.customAdjLabel;
-                if (parsed.activeMonth) state.activeMonth = parsed.activeMonth;
+            const hasSeedMembers = Array.isArray(parsed.masterMembers) && parsed.masterMembers.some(m => m && (m.name || '').trim());
+            const hasSeedTransactions = Array.isArray(parsed.transactions) && parsed.transactions.length > 0;
+            if (hasSeedMembers || hasSeedTransactions) {
+                console.info('Fresh startup mode: ignoring stale local storage seed data.');
+                localStorage.removeItem('isotope_mess_data_v3');
+                localStorage.removeItem('isotope_mess_data_v2');
+            } else {
+                if (parsed && typeof parsed === 'object') {
+                    if (parsed.masterMembers && Array.isArray(parsed.masterMembers)) {
+                        state.masterMembers = parsed.masterMembers;
+                    }
+                    if (parsed.months) state.months = parsed.months;
+                    if (parsed.adminPassword) state.adminPassword = parsed.adminPassword;
+                    if (parsed.customAdjLabel) state.customAdjLabel = parsed.customAdjLabel;
+                    if (parsed.activeMonth) state.activeMonth = parsed.activeMonth;
 
-                // Sync active month
-                if (state.months && state.months[state.activeMonth]) {
-                    const mData = state.months[state.activeMonth];
-                    state.fixedCosts = { ...mData.fixedCosts };
-                    state.members = mData.members.map(m => ({ ...m }));
-                    state.notices = mData.notices.map(n => ({ ...n }));
-                    state.transactions = mData.transactions.map(t => ({ ...t }));
+                    if (state.months && state.months[state.activeMonth]) {
+                        const mData = state.months[state.activeMonth];
+                        state.fixedCosts = { ...mData.fixedCosts };
+                        state.members = mData.members.map(m => ({ ...m }));
+                        state.notices = mData.notices.map(n => ({ ...n }));
+                        state.transactions = mData.transactions.map(t => ({ ...t }));
+                    }
                 }
             }
         } catch (e) {
             console.error("Local storage load error:", e);
         }
+    }
+
+    if (!state.months || Object.keys(state.months).length === 0) {
+        state.months = createInitialMonthsData(getCurrentResetYear());
+        const monthKey = `${getCurrentResetYear()}-01`;
+        state.activeMonth = monthKey;
+        state.fixedCosts = { ...state.months[monthKey].fixedCosts };
+        state.members = state.months[monthKey].members.map(m => ({ ...m }));
+        state.notices = [];
+        state.transactions = [];
     }
 
     updateMonthDisplayUI();
