@@ -1,7 +1,7 @@
 // Isotope Mess Manager - Service Worker
 // Strategy: Cache-first for static assets, Network-first for dynamic data
 
-const CACHE_NAME = 'isotope-mess-v2.2';
+const CACHE_NAME = 'isotope-mess-v2.3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -18,7 +18,7 @@ const STATIC_ASSETS = [
 // Install Event: Cache all static assets
 // =====================
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Service Worker v2.2...');
+  console.log('[SW] Installing Service Worker v2.3...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[SW] Caching static assets...');
@@ -34,7 +34,7 @@ self.addEventListener('install', (event) => {
 // Activate Event: Clean old caches
 // =====================
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating Service Worker v2.2...');
+  console.log('[SW] Activating Service Worker v2.3...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(

@@ -179,6 +179,14 @@
                     <option value="notice-other">📌 অন্যান্য (ধূসর)</option>
                 </select>
             </div>
+            <div class="input-group" style="margin-top: 12px;">
+                <label>নোটিশ দেখানোর ধরন:</label>
+                <select id="newNoticeDisplayMode" class="drawer-input">
+                    <option value="board">নোটিশ বোর্ডে দেখান</option>
+                    <option value="ticker">নেভবারের নিচে মারকি / নিউজ টিকার</option>
+                    <option value="popup">ওয়েবসাইটে ঢোকার সময় পপআপ</option>
+                </select>
+            </div>
             <div class="notice-color-control">
                 <label for="newNoticeColor">নোটিশের রং:</label>
                 <input type="color" id="newNoticeColor" value="#ef4444" class="notice-color-input" title="নোটিশের রং নির্বাচন করুন">
@@ -194,6 +202,18 @@
             </button>
         </div>
         <div id="noticeModalList" style="margin-top: 14px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+</div>
+
+<div id="noticePopup" class="modal notice-popup-modal" role="dialog" aria-modal="true" aria-labelledby="noticePopupTitle" hidden>
+    <div class="notice-popup-content clay-card">
+        <div class="notice-popup-heading">
+            <span class="notice-popup-kicker">📢 গুরুত্বপূর্ণ নোটিশ</span>
+            <button class="modal-close-btn" onclick="closeNoticePopup()" title="বন্ধ করুন" aria-label="বন্ধ করুন">×</button>
+        </div>
+        <h3 id="noticePopupTitle">আজকের নোটিশ</h3>
+        <div id="noticePopupBody" class="notice-popup-body"></div>
+        <button class="btn clay-btn clay-btn-primary" onclick="closeNoticePopup()">বুঝেছি</button>
     </div>
 </div>
 
@@ -446,6 +466,8 @@
         </div>
     </nav>
 
+    <div id="noticeTicker" class="notice-ticker" aria-live="polite" hidden></div>
+
     <!-- Summary Section -->
     <div class="summary-section">
         <div class="clay-card">
@@ -659,6 +681,10 @@
             </div>
         </div>
         <div class="nav-buttons">
+            <button id="developerModeBtn" class="btn clay-btn developer-mode-btn" onclick="toggleDeveloperMode()" aria-pressed="false">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zM14.6 16.6 19.2 12l-4.6-4.6L16 6l6 6-6 6-1.4-1.4zM13.1 4l-2 16h2L15.1 4h-2z"/></svg>
+                <span id="developerModeBtnText">ডেভেলপার মোড অফ</span>
+            </button>
             <button class="btn clay-btn clay-btn-danger" onclick="turnOffAdmin()">
                 <svg class="svg-icon" viewBox="0 0 24 24">
                     <path d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z" />
@@ -824,10 +850,11 @@
     // ============================================================
     // LOCAL DEV / PRODUCTION SWITCH
     // ------------------------------------------------------------
-    // In local development, Firebase is intentionally NOT initialized:
-    // the app saves only to localStorage. NO request reaches live Firestore.
-    // In production (Vercel), Firebase connects as normal and reads/writes
-    // the real user-facing Firestore collections.
+    // In local development, Firebase connects only to the dev namespace:
+    // no production data is read or written, and local developer-mode toggles
+    // never copy data from prod to dev.
+    // In production (Vercel), Firebase reads/writes prod normally and the
+    // developer-mode workflow can copy prod data into the dev namespace.
     // ============================================================
     const IS_DEV_MODE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     window.IS_DEV_MODE = IS_DEV_MODE;
@@ -866,9 +893,7 @@
     window.initFirebaseIfNeeded = initFirebaseIfNeeded;
     window.ensureFirebaseReady = initFirebaseIfNeeded;
 
-    if (!IS_DEV_MODE) {
-        initFirebaseIfNeeded();
-    }
+    initFirebaseIfNeeded();
 </script>
 
 <script src="app.js"></script>

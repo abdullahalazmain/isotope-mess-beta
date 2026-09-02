@@ -75,6 +75,9 @@ body {
 .brand-title { font-size: 24px; font-weight: 800; color: #2563eb; }
 .brand-subtitle { font-size: 12px; color: #64748b; font-weight: 500; }
 .nav-buttons { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.developer-mode-btn { border: 1px solid #f59e0b; color: #92400e; }
+.developer-mode-btn.is-on { background: linear-gradient(145deg, #f59e0b, #d97706); color: #ffffff; }
+.developer-mode-btn:disabled { opacity: .65; cursor: wait; }
 
 /* Buttons */
 .btn {
@@ -800,6 +803,18 @@ th.highlight-column {
 
 /* Notice Styling */
 .notice-container { display: flex; flex-direction: column; gap: 12px; }
+.notice-ticker { display: flex; align-items: center; margin: 0 0 26px; overflow: hidden; color: #92400e; }
+.notice-ticker[hidden] { display: none !important; }
+.notice-ticker-track { width: 100%; min-width: 0; overflow: hidden; white-space: nowrap; }
+.notice-ticker-track > span { display: inline-block; padding-left: 100%; animation: noticeTickerScroll 22s linear infinite; font-size: 13px; font-weight: 700; }
+@keyframes noticeTickerScroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+.notice-popup-modal { z-index: 10000; }
+.notice-popup-content { width: min(520px, calc(100vw - 32px)); max-height: min(620px, calc(100vh - 32px)); overflow-y: auto; border-top: 5px solid #f59e0b; }
+.notice-popup-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.notice-popup-kicker { color: #b45309; font-size: 12px; font-weight: 800; }
+.notice-popup-content h3 { margin: 10px 0 14px; color: #1e293b; }
+.notice-popup-body { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.notice-popup-content > .clay-btn-primary { width: 100%; }
 .notice-box { padding: 14px; border-radius: 12px; font-size: 13.5px; border-left: 5px solid var(--notice-color, #64748b); }
 .notice-urgent { --notice-color: #ef4444; color: #991b1b; background: #fef2f2; }
 .notice-advance { --notice-color: #10b981; color: #065f46; background: #ecfdf5; }
