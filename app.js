@@ -514,8 +514,139 @@ async function resetFirebaseToFreshMess({ env = null, messName = "Isotope Mess",
     return { ...result, cleared: clearResult.cleared, deletedPaths: clearResult.deletedPaths, environment: targetEnv };
 }
 
+async function resetFirebaseToFreshMessSafe({ env = null, messName = "Isotope Mess", forceInit = true } = {}) {
+    const targetEnv = env || getDataNamespace();
+
+    if (!window.firebaseDb) {
+        await ensureFirebaseReady({ force: forceInit });
+    }
+
+    if (!window.firebaseDb) {
+        throw new Error('Firebase database not connected.');
+    }
+
+    const { doc, setDoc, getDoc, collection, getDocs } = await getFirestoreModule();
+    const now = new Date().toISOString();
+    const envDocRef = doc(window.firebaseDb, 'data', targetEnv);
+    const envDocSnap = await getDoc(envDocRef);
+
+    if (!envDocSnap.exists()) {
+        await setDoc(envDocRef, {
+            environment: targetEnv,
+            type: 'namespace',
+            schemaVersion: FIRESTORE_SCHEMA_VERSION,
+            createdAt: now,
+            updatedAt: now
+        }, { merge: true });
+    }
+
+    const appRef = doc(window.firebaseDb, 'data', targetEnv, 'app', 'meta');
+    const appSnap = await getDoc(appRef);
+    if (!appSnap.exists()) {
+        await setDoc(appRef, {
+            appId: 'ISO-APP-ROOT',
+            name: 'Isotope',
+            defaultLocale: 'bn',
+            defaultCurrency: 'BDT',
+            schemaVersion: FIRESTORE_SCHEMA_VERSION,
+            environment: targetEnv,
+            status: 'active',
+            createdAt: now,
+            updatedAt: now
+        }, { merge: true });
+    }
+
+    const messId = DEFAULT_MESS_ID;
+    const messRef = doc(window.firebaseDb, 'data', targetEnv, 'messes', messId);
+    const messSnap = await getDoc(messRef);
+    if (!messSnap.exists()) {
+        await setDoc(messRef, createBlankMessRecord({
+            messId,
+            name: messName,
+            status: 'empty',
+            environment: targetEnv,
+            schemaVersion: FIRESTORE_SCHEMA_VERSION,
+            createdAt: now,
+            updatedAt: now
+        }), { merge: true });
+    }
+
+    await setDoc(doc(window.firebaseDb, 'data', targetEnv, 'messes', messId, 'settings', 'primary'), createBlankMessSettings({
+        messId,
+        adminPassword: DEFAULT_ADMIN_PASSWORD,
+        customAdjLabel: DEFAULT_CUSTOM_ADJ_LABEL,
+        activeMonth: DEFAULT_ACTIVE_MONTH_KEY,
+        environment: targetEnv,
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        createdAt: now,
+        updatedAt: now
+    }), { merge: true });
+
+    await setDoc(doc(window.firebaseDb, 'data', targetEnv, 'messes', messId, 'members', 'registry'), {
+        messId,
+        totalMembers: 0,
+        list: [],
+        status: 'empty',
+        environment: targetEnv,
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        updatedAt: now
+    }, { merge: true });
+
+    await setDoc(doc(window.firebaseDb, 'data', targetEnv, 'messes', messId, 'months', 'index'), {
+        messId,
+        totalMonths: 12,
+        monthKeys: Array.from({ length: 12 }, (_, i) => `${CURRENT_YEAR}-${String(i + 1).padStart(2, '0')}`),
+        status: 'empty',
+        environment: targetEnv,
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        updatedAt: now
+    }, { merge: true });
+
+    await setDoc(doc(window.firebaseDb, 'data', targetEnv, 'messes', messId, 'notices', 'index'), {
+        messId,
+        totalNotices: 0,
+        status: 'empty',
+        environment: targetEnv,
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        updatedAt: now
+    }, { merge: true });
+
+    await setDoc(doc(window.firebaseDb, 'data', targetEnv, 'messes', messId, 'transactions', 'index'), {
+        messId,
+        totalTransactions: 0,
+        status: 'empty',
+        environment: targetEnv,
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        updatedAt: now
+    }, { merge: true });
+
+    resetLocalAppStateToEmpty();
+
+    const dataRootSnap = await getDocs(collection(window.firebaseDb, 'data'));
+    const envRootSnap = await getDocs(collection(window.firebaseDb, 'data', targetEnv));
+    const appRootSnap = await getDocs(collection(window.firebaseDb, 'data', targetEnv, 'app'));
+    const messRootSnap = await getDocs(collection(window.firebaseDb, 'data', targetEnv, 'messes'));
+
+    const result = {
+        success: true,
+        env: targetEnv,
+        namespaceDocExists: envDocSnap.exists(),
+        appDocs: appRootSnap.docs.map(d => d.id),
+        messDocs: messRootSnap.docs.map(d => d.id),
+        dataRootDocs: dataRootSnap.docs.map(d => d.id),
+        envRootDocs: envRootSnap.docs.map(d => d.id),
+        messId,
+        schemaVersion: FIRESTORE_SCHEMA_VERSION
+    };
+
+    console.info('Safe Firebase reset complete:', result);
+    return result;
+}
+
 window.resetFirebaseData = resetFirebaseToFreshMess;
 window.resetFirebaseFromConsole = resetFirebaseToFreshMess;
+window.resetFirebaseSafely = resetFirebaseToFreshMessSafe;
+window.resetFirebaseToFreshMessSafe = resetFirebaseToFreshMessSafe;
 window.ensureFirebaseReady = ensureFirebaseReady;
 window.initializeFirebaseForAdminTools = ensureFirebaseReady;
 
