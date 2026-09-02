@@ -770,16 +770,41 @@ th.highlight-column {
 
 /* Notice Styling */
 .notice-container { display: flex; flex-direction: column; gap: 12px; }
-.notice-box { padding: 14px; border-radius: 12px; font-size: 13.5px; border-left: 5px solid; }
-.notice-urgent { border-color: #ef4444; color: #991b1b; background: #fef2f2; }
-.notice-advance { border-color: #10b981; color: #065f46; background: #ecfdf5; }
-.notice-info { border-color: #f59e0b; color: #92400e; background: #fffbeb; }
-.notice-meeting { border-color: #8b5cf6; color: #5b21b6; background: #f3e8ff; }
-.notice-bazar { border-color: #06b6d4; color: #164e63; background: #ecfeff; }
-.notice-other { border-color: #64748b; color: #334155; background: #f1f5f9; }
+.notice-box { padding: 14px; border-radius: 12px; font-size: 13.5px; border-left: 5px solid var(--notice-color, #64748b); }
+.notice-urgent { --notice-color: #ef4444; color: #991b1b; background: #fef2f2; }
+.notice-advance { --notice-color: #10b981; color: #065f46; background: #ecfdf5; }
+.notice-info { --notice-color: #f59e0b; color: #92400e; background: #fffbeb; }
+.notice-meeting { --notice-color: #8b5cf6; color: #5b21b6; background: #f3e8ff; }
+.notice-bazar { --notice-color: #06b6d4; color: #164e63; background: #ecfeff; }
+.notice-complaint { --notice-color: #f97316; color: #9a3412; background: #fff7ed; }
+.notice-other { --notice-color: #64748b; color: #334155; background: #f1f5f9; }
 
 .notice-admin-box { padding: 12px; margin-bottom: 10px; }
 .notice-item-admin { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 12.5px; gap: 8px; }
+.notice-admin-actions { display: inline-flex; gap: 6px; flex-shrink: 0; }
+.member-mgr-section { margin-bottom: 18px; }
+.member-mgr-section-title { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid #cbd5e1; color: #1e293b; font-size: 13px; }
+.member-mgr-section-title span { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: #dbeafe; color: #1d4ed8; font-size: 11px; }
+.member-mgr-section--removed .member-mgr-section-title { color: #991b1b; }
+.member-mgr-section--removed .member-mgr-section-title span { background: #fee2e2; color: #b91c1c; }
+.notice-composer { position: relative; }
+.notice-composer textarea { padding-left: 48px !important; }
+.notice-emoji-trigger { position: absolute; top: 9px; left: 9px; z-index: 2; display: inline-flex; align-items: center; gap: 2px; border: 0; background: transparent; color: #475569; cursor: pointer; font-size: 18px; padding: 2px; }
+.notice-emoji-chevron { font-size: 11px; color: #64748b; }
+.notice-emoji-picker { position: absolute; top: 42px; left: 6px; z-index: 10; display: none; grid-template-columns: repeat(6, 32px); gap: 4px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; box-shadow: 0 8px 20px rgba(15, 23, 42, .16); }
+.notice-emoji-picker.is-open { display: grid; }
+.notice-emoji-option { width: 32px; height: 32px; border: 0; border-radius: 7px; background: #f8fafc; cursor: pointer; font-size: 18px; }
+.notice-emoji-option:hover { background: #dbeafe; }
+.notice-color-control { display: flex; align-items: center; gap: 9px; margin-top: 12px; color: #475569; font-size: 12px; font-weight: 600; }
+.notice-color-input { width: 30px; height: 30px; padding: 0; border: 2px solid #fff; border-radius: 50%; background: transparent; box-shadow: 0 0 0 1px #cbd5e1, 0 2px 5px rgba(15, 23, 42, .14); cursor: pointer; overflow: hidden; }
+.notice-color-input::-webkit-color-swatch-wrapper { padding: 0; }
+.notice-color-input::-webkit-color-swatch { border: 0; border-radius: 50%; }
+.notice-color-control span { font-family: monospace; font-size: 11px; color: #64748b; }
+.notice-format-hint { margin-top: 8px; color: #64748b; font-size: 11.5px; }
+.monochrome-heading-icon { width: 20px; height: 20px; fill: currentColor; flex: 0 0 20px; }
+.monochrome-control-icon { width: 16px; height: 16px; fill: currentColor; vertical-align: -3px; margin-right: 4px; }
+.row-label-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin-right: 6px; vertical-align: -4px; color: #2563eb; }
+.row-label-icon .svg-icon { width: 18px; height: 18px; fill: currentColor; }
 
 /* Toast Notifications */
 .toast-container {
