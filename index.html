@@ -811,9 +811,12 @@
     const IS_DEV_MODE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     window.IS_DEV_MODE = IS_DEV_MODE;
 
-    if (!IS_DEV_MODE) {
+    async function initFirebaseIfNeeded() {
+        if (window.firebaseDb) {
+            return window.firebaseDb;
+        }
+
         const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js");
-        const { getAnalytics } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-analytics.js");
         const { getFirestore } = await import("https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js");
 
         const firebaseConfig = {
@@ -827,7 +830,6 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
         const db = getFirestore(app);
 
         window.firebaseApp = app;
@@ -836,6 +838,15 @@
         if (typeof window.loadFromFirestore === 'function') {
             window.loadFromFirestore();
         }
+
+        return db;
+    }
+
+    window.initFirebaseIfNeeded = initFirebaseIfNeeded;
+    window.ensureFirebaseReady = initFirebaseIfNeeded;
+
+    if (!IS_DEV_MODE) {
+        initFirebaseIfNeeded();
     }
 </script>
 
