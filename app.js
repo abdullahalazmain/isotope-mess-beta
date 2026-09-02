@@ -321,10 +321,22 @@ async function bootstrapEmptyFirestoreTree({ env = null, messName = "Isotope Mes
         return { bootstrapped: false, reason: "missing-db", environment: targetEnv, messId };
     }
 
-    const { doc, setDoc } = await getFirestoreModule();
+    const { doc, setDoc, getDoc } = await getFirestoreModule();
     const now = new Date().toISOString();
     const root = getDataPath(targetEnv);
     const targetMessId = messId || DEFAULT_MESS_ID;
+
+    const namespaceDocRef = doc(window.firebaseDb, 'data', targetEnv);
+    const namespaceDocSnap = await getDoc(namespaceDocRef);
+    if (!namespaceDocSnap.exists()) {
+        await setDoc(namespaceDocRef, {
+            environment: targetEnv,
+            type: 'namespace',
+            schemaVersion: FIRESTORE_SCHEMA_VERSION,
+            updatedAt: now
+        }, { merge: true });
+    }
+
     const messRecord = createBlankMessRecord({
         messId: targetMessId,
         name: messName,
@@ -426,13 +438,17 @@ async function initializeFreshLiveMess({ env = null, messName = "Isotope Mess" }
         throw new Error("Firebase database not connected.");
     }
 
-    const { doc, setDoc } = await getFirestoreModule();
-    await setDoc(doc(window.firebaseDb, 'data', targetEnv), {
-        environment: targetEnv,
-        type: 'namespace',
-        schemaVersion: FIRESTORE_SCHEMA_VERSION,
-        updatedAt: now
-    }, { merge: true });
+    const { doc, setDoc, getDoc } = await getFirestoreModule();
+    const namespaceDocRef = doc(window.firebaseDb, 'data', targetEnv);
+    const namespaceDocSnap = await getDoc(namespaceDocRef);
+    if (!namespaceDocSnap.exists()) {
+        await setDoc(namespaceDocRef, {
+            environment: targetEnv,
+            type: 'namespace',
+            schemaVersion: FIRESTORE_SCHEMA_VERSION,
+            updatedAt: now
+        }, { merge: true });
+    }
 
     const messRecord = createBlankMessRecord({
         messId: targetMessId,
