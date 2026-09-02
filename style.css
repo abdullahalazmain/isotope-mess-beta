@@ -406,7 +406,7 @@ th.highlight-column {
     display: inline-flex;
     align-items: center;
     vertical-align: middle;
-    margin: 0 4px;
+    margin: 0 1px;
     position: relative !important;
 }
 
@@ -493,6 +493,36 @@ th.highlight-column {
     box-shadow: 3px 3px 8px rgba(37, 99, 235, 0.25), inset 1px 1px 2px rgba(255, 255, 255, 0.3);
     transition: all 0.2s ease;
     text-align: center;
+}
+
+.adj-info-btn {
+    width: 19px;
+    height: 19px;
+    margin-left: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #2563eb;
+    line-height: 0;
+}
+.adj-info-btn .svg-icon {
+    width: 16px;
+    height: 16px;
+    display: block;
+    fill: currentColor;
+}
+.adj-info-svg {
+    width: 19px;
+    height: 19px;
+    display: block;
+}
+.adj-info-btn:hover {
+    background: rgba(37, 99, 235, 0.08);
+    color: #1d4ed8;
+    transform: none;
+    border: 0;
+    box-shadow: none;
 }
 .admin-action-btn:hover {
     transform: translateY(-1px);
@@ -910,25 +940,31 @@ th.highlight-column {
 .adj-info-wrapper {
     position: relative;
     display: inline-block;
-    vertical-align: middle;
+    vertical-align: -1px;
+    margin: 0 !important;
 }
 .adj-info-btn {
     background: transparent;
     border: none;
     cursor: pointer;
-    font-size: 13px;
-    margin-left: 3px;
-    padding: 2px 5px;
-    border-radius: 6px;
-    vertical-align: middle;
+    width: 19px !important;
+    height: 19px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    vertical-align: top;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     color: #2563eb;
-    transition: background 0.15s ease;
+    line-height: 0;
+    transform: translateY(-2px);
+    transition: color 0.15s ease;
 }
 .adj-info-btn:hover {
-    background: rgba(37, 99, 235, 0.12);
+    background: transparent;
+    color: #1d4ed8;
+    transform: translateY(-2px);
 }
 .adj-info-badge {
     position: absolute;
