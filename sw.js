@@ -55,10 +55,14 @@ self.addEventListener('activate', (event) => {
 // =====================
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+
+  if (!request || typeof request.url !== 'string') return;
+
   const url = new URL(request.url);
 
-  // Skip non-GET requests and cross-origin requests (e.g., Firebase)
+  // Skip non-GET requests and browser-extension / unsupported schemes.
   if (request.method !== 'GET') return;
+  if (!['http:', 'https:'].includes(url.protocol)) return;
 
   // For Firebase / external CDN requests: network only (don't cache)
   if (

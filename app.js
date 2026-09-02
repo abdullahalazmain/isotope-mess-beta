@@ -13,6 +13,7 @@ const CURRENT_YEAR = 2026;
 const DEFAULT_ACTIVE_MONTH_KEY = "2026-06";
 const DEFAULT_MESS_ID = "ISO-MESS-2026-06";
 const MESS_ID = DEFAULT_MESS_ID;
+const FIRESTORE_SCHEMA_VERSION = "3.1";
 
 function generateIsotopeId(prefix = "GEN") {
     const stamp = Date.now().toString(36).toUpperCase();
@@ -223,12 +224,12 @@ function getCurrentResetYear() {
 }
 
 // ---------- State ----------
-const emptyStartMonth = createEmptyMonthData("2026-01");
+const emptyStartMonth = createEmptyMonthData(DEFAULT_ACTIVE_MONTH_KEY);
 state = {
     isAdmin: false,
     adminPassword: DEFAULT_ADMIN_PASSWORD,
     customAdjLabel: DEFAULT_CUSTOM_ADJ_LABEL,
-    activeMonth: "2026-01",
+    activeMonth: DEFAULT_ACTIVE_MONTH_KEY,
     masterMembers: [],
     months: createInitialMonthsData(CURRENT_YEAR),
     // Active month view mirrors:
@@ -240,7 +241,6 @@ state = {
 
 let confirmCallback = null;
 let firestoreModuleCache = null;
-const FIRESTORE_SCHEMA_VERSION = "3.1";
 
 async function resetFirestoreDatabase() {
     if (!window.firebaseDb) {
