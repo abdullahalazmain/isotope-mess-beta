@@ -2049,7 +2049,7 @@ function renderTransactions() {
         totalAmount += Number(t.amount);
 
         const adminBtnHtml = adminMode
-            ? `<td class="text-center td-admin-action"><button class="btn clay-btn transaction-edit-btn" style="padding: 3px 8px; font-size: 11px;" onclick="editTransaction(${t.id})">এডিট</button> <button class="btn clay-btn clay-btn-danger" style="padding: 3px 8px; font-size: 11px;" onclick="deleteTransaction(${t.id})"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg> ডিলিট</button></td>`
+            ? `<td class="text-center td-admin-action"><div class="table-action-group"><button class="icon-action-btn" onclick="editTransaction(${t.id})" title="এডিট" aria-label="এডিট"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.03 0-1.42l-2.34-2.34a1 1 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/></svg></button><button class="icon-action-btn icon-action-btn--danger" onclick="deleteTransaction(${t.id})" title="ডিলিট" aria-label="ডিলিট"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div></td>`
             : '';
 
         rows.push(`
@@ -2195,7 +2195,7 @@ function renderDrawerInputs() {
         noticeBox.innerHTML = state.notices.map((n, idx) => `
             <div class="notice-item-admin ${escapeHtml(n.type || 'notice-other')}" style="${noticeStyle(n)}">
                 <span style="flex:1; word-break:break-word;">${noticeTextHtml({ ...n, text: (n.text || '').substring(0, 32) })}...</span>
-                <span class="notice-admin-actions"><button class="btn clay-btn" style="padding: 3px 8px; font-size: 11px;" onclick="editNotice(${n.id})">এডিট</button><button class="btn clay-btn clay-btn-danger" style="padding: 3px 8px; font-size: 11px; flex-shrink:0;" onclick="deleteNotice(${idx})">ডিলিট</button></span>
+                <span class="notice-admin-actions"><button class="icon-action-btn" onclick="editNotice(${n.id})" title="এডিট" aria-label="এডিট"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.03 0-1.42l-2.34-2.34a1 1 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/></svg></button><button class="icon-action-btn icon-action-btn--danger" onclick="deleteNotice(${idx})" title="ডিলিট" aria-label="ডিলিট"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></span>
             </div>
         `).join('');
     }
@@ -2313,6 +2313,22 @@ function saveSelectedMemberData(memberName) {
 // ---------- Data Mutations ----------
 let editingTransactionId = null;
 
+function transactionDateTimeValue(dateText) {
+    const match = String(dateText || '').match(/(\d{2})\/(\d{2})\/(\d{4}),\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (!match) return '';
+    let hour = Number(match[5]);
+    const meridiem = (match[7] || '').toUpperCase();
+    if (meridiem === 'PM' && hour < 12) hour += 12;
+    if (meridiem === 'AM' && hour === 12) hour = 0;
+    return `${match[3]}-${match[2]}-${match[1]}T${String(hour).padStart(2, '0')}:${match[6]}`;
+}
+
+function formatTransactionDate(dateTimeValue) {
+    const date = new Date(dateTimeValue);
+    if (Number.isNaN(date.getTime())) return dateTimeValue;
+    return `${date.toLocaleDateString('en-GB')}, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+}
+
 function editTransaction(txnId) {
     const transaction = state.transactions.find(t => t.id === txnId);
     if (!transaction) return;
@@ -2320,6 +2336,7 @@ function editTransaction(txnId) {
     openDepositModal();
     $('txnMemberSelect').value = transaction.member;
     $('txnAmountInput').value = transaction.amount;
+    if ($('txnDateTimeInput')) $('txnDateTimeInput').value = transactionDateTimeValue(transaction.date);
     $('txnNoteInput').value = transaction.note;
     const title = $('depositModal')?.querySelector('h3');
     const saveButton = $('depositModal')?.querySelector('.modal-actions .clay-btn-primary');
@@ -2339,17 +2356,20 @@ function submitDepositTransaction() {
 
     const now = new Date();
     const formattedDate = `${now.toLocaleDateString('en-GB')}, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const selectedDateTime = $('txnDateTimeInput')?.value;
+    const transactionDate = selectedDateTime ? formatTransactionDate(selectedDateTime) : formattedDate;
 
     if (editingTransactionId !== null) {
         const transaction = state.transactions.find(t => t.id === editingTransactionId);
         if (transaction) {
+            transaction.date = transactionDate;
             transaction.member = memberName;
             transaction.note = note;
             transaction.amount = amount;
         }
         editingTransactionId = null;
     } else {
-        state.transactions.push({ id: Date.now(), date: formattedDate, member: memberName, note, amount });
+        state.transactions.push({ id: Date.now(), date: transactionDate, member: memberName, note, amount });
     }
 
     closeDepositModal();
@@ -2826,8 +2846,10 @@ function openDepositModal() {
         });
     }
     const amtInput = $('txnAmountInput');
+    const dateTimeInput = $('txnDateTimeInput');
     const noteInput = $('txnNoteInput');
     if (amtInput) amtInput.value = '';
+    if (dateTimeInput) dateTimeInput.value = '';
     if (noteInput) noteInput.value = '';
     modal.style.display = 'flex';
 }
@@ -2874,7 +2896,7 @@ function renderNoticeModalList() {
         list.innerHTML += `
             <div class="notice-item-admin ${escapeHtml(n.type || 'notice-other')}" style="${noticeStyle(n)} margin-bottom:8px;">
                 <span style="flex:1; word-break:break-word;">${noticeTextHtml(n)}</span>
-                <span class="notice-admin-actions"><button class="btn clay-btn" style="padding: 4px 10px; font-size: 11px;" onclick="editNotice(${n.id})">এডিট</button><button class="btn clay-btn clay-btn-danger" style="padding: 4px 10px; font-size: 11px; flex-shrink:0;" onclick="deleteNotice(${idx}); renderNoticeModalList();">ডিলিট</button></span>
+                <span class="notice-admin-actions"><button class="icon-action-btn" onclick="editNotice(${n.id})" title="এডিট" aria-label="এডিট"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.03 0-1.42l-2.34-2.34a1 1 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/></svg></button><button class="icon-action-btn icon-action-btn--danger" onclick="deleteNotice(${idx}); renderNoticeModalList();" title="ডিলিট" aria-label="ডিলিট"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></span>
             </div>
         `;
     });
