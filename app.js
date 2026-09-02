@@ -10,7 +10,15 @@ const DEFAULT_ADMIN_PASSWORD = "@12azmain";
 const LEGACY_ADMIN_PASSWORDS = ["@12azmain", "isotope@123"];
 const DEFAULT_CUSTOM_ADJ_LABEL = "অন্যান্য";
 const CURRENT_YEAR = 2026;
-const MESS_ID = "ISO-MESS-01";
+const DEFAULT_ACTIVE_MONTH_KEY = "2026-06";
+const DEFAULT_MESS_ID = "ISO-MESS-2026-06";
+const MESS_ID = DEFAULT_MESS_ID;
+
+function generateIsotopeId(prefix = "GEN") {
+    const stamp = Date.now().toString(36).toUpperCase();
+    const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
+    return `ISO-${String(prefix).toUpperCase()}-${stamp}-${randomPart}`;
+}
 
 function getDataNamespace() {
     return window.IS_DEV_MODE ? "dev" : "prod";
@@ -49,13 +57,58 @@ const EMPTY_FIXED_COSTS = {
     waterBill: 0,
     wifi: 0,
     khala: 0,
-    waste: 0
+    waste: 0,
+    other: 0
 };
 
 const INITIAL_MASTER_MEMBERS = [];
 const EMPTY_MEMBERS = [];
 const EMPTY_NOTICES = [];
 const EMPTY_TRANSACTIONS = [];
+
+function createBlankMessRecord(overrides = {}) {
+    const now = new Date().toISOString();
+    const messName = overrides.name || "Isotope Mess";
+    const baseId = overrides.messId || generateIsotopeId("MESS");
+    return {
+        messId: baseId,
+        name: messName,
+        slug: String(messName).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || "isotope-mess",
+        address: "",
+        city: "",
+        country: "Bangladesh",
+        password: "",
+        adminUserId: "",
+        status: "empty",
+        isPublic: false,
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        environment: getDataNamespace(),
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+        ...overrides
+    };
+}
+
+function createBlankMessSettings(overrides = {}) {
+    const now = new Date().toISOString();
+    return {
+        messId: overrides.messId || DEFAULT_MESS_ID,
+        currency: "BDT",
+        locale: "bn",
+        adminPassword: DEFAULT_ADMIN_PASSWORD,
+        customAdjLabel: DEFAULT_CUSTOM_ADJ_LABEL,
+        activeMonth: DEFAULT_ACTIVE_MONTH_KEY,
+        defaultRent: 0,
+        defaultMealRate: 0,
+        timezone: "Asia/Dhaka",
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        environment: getDataNamespace(),
+        createdAt: now,
+        updatedAt: now,
+        ...overrides
+    };
+}
 
 // ---------- Dynamic Member ID Generator ----------
 function generateMemberId(joinMonth, serialNumber) {
@@ -78,9 +131,10 @@ function getActiveMembersForMonth(monthKey) {
 }
 
 // Generate clean default month template (all values zero)
-function createEmptyMonthData(monthKey = "2026-08") {
+function createEmptyMonthData(monthKey = DEFAULT_ACTIVE_MONTH_KEY) {
     const activeMasterList = getActiveMembersForMonth(monthKey);
     return {
+        monthKey,
         fixedCosts: {
             electricity: 0,
             gas: 0,
@@ -89,7 +143,8 @@ function createEmptyMonthData(monthKey = "2026-08") {
             waterBill: 0,
             wifi: 0,
             khala: 0,
-            waste: 0
+            waste: 0,
+            other: 0
         },
         members: activeMasterList.map(m => ({
             id: m.id,
@@ -101,7 +156,18 @@ function createEmptyMonthData(monthKey = "2026-08") {
             fridgeAdj: 0
         })),
         notices: [],
-        transactions: []
+        transactions: [],
+        meals: [],
+        marketPlans: [],
+        summary: {
+            totalMeals: 0,
+            totalBazar: 0,
+            totalRent: 0,
+            totalExpense: 0
+        },
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
     };
 }
 
@@ -114,6 +180,41 @@ function createInitialMonthsData(year = CURRENT_YEAR) {
         months[key] = createEmptyMonthData(key);
     }
     return months;
+}
+
+function createBlankMessState(overrides = {}) {
+    const activeMonth = overrides.activeMonth || DEFAULT_ACTIVE_MONTH_KEY;
+    const emptyMonth = createEmptyMonthData(activeMonth);
+    return {
+        isAdmin: false,
+        adminPassword: DEFAULT_ADMIN_PASSWORD,
+        customAdjLabel: DEFAULT_CUSTOM_ADJ_LABEL,
+        activeMonth,
+        masterMembers: [],
+        months: createInitialMonthsData(CURRENT_YEAR),
+        fixedCosts: { ...emptyMonth.fixedCosts },
+        members: emptyMonth.members.map(m => ({ ...m })),
+        notices: [],
+        transactions: [],
+        meals: [],
+        marketPlans: [],
+        mess: {
+            messId: overrides.messId || DEFAULT_MESS_ID,
+            name: overrides.name || "Isotope Mess",
+            slug: String(overrides.name || "Isotope Mess").toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || "isotope-mess",
+            status: "empty",
+            schemaVersion: FIRESTORE_SCHEMA_VERSION,
+            address: "",
+            city: "",
+            country: "Bangladesh",
+            password: "",
+            adminUserId: "",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            environment: getDataNamespace()
+        },
+        ...overrides
+    };
 }
 
 function getCurrentResetYear() {
@@ -139,7 +240,7 @@ state = {
 
 let confirmCallback = null;
 let firestoreModuleCache = null;
-const FIRESTORE_SCHEMA_VERSION = "2.0";
+const FIRESTORE_SCHEMA_VERSION = "3.1";
 
 async function resetFirestoreDatabase() {
     if (!window.firebaseDb) {
@@ -206,104 +307,204 @@ async function bootstrapEmptyFirestoreTree() {
     const now = new Date().toISOString();
     const ns = getDataNamespace();
     const root = getDataPath();
-
-    await setDoc(doc(window.firebaseDb, ...root, "appConfig", "schema"), {
-        schemaVersion: FIRESTORE_SCHEMA_VERSION,
-        defaultCurrency: "BDT",
-        defaultLocale: "bn",
-        appName: "Isotope Mess",
-        activeMessId: MESS_ID,
-        environment: ns,
-        status: "empty",
-        createdAt: now,
-        updatedAt: now
-    });
-
-    await setDoc(doc(window.firebaseDb, ...root, "messes", MESS_ID), {
-        messId: MESS_ID,
+    const messId = DEFAULT_MESS_ID;
+    const messRecord = createBlankMessRecord({
+        messId,
         name: "Isotope Mess",
         status: "empty",
-        hasSeedData: false,
         environment: ns,
         schemaVersion: FIRESTORE_SCHEMA_VERSION,
         createdAt: now,
         updatedAt: now
     });
 
-    await setDoc(doc(window.firebaseDb, ...root, "messes", MESS_ID, "settings", "primary"), {
-        currency: "BDT",
-        locale: "bn",
+    await setDoc(doc(window.firebaseDb, ...root, "app", "meta"), {
+        appId: "ISO-APP-ROOT",
+        name: "Isotope",
+        defaultLocale: "bn",
+        defaultCurrency: "BDT",
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        environment: ns,
+        status: "active",
+        createdAt: now,
+        updatedAt: now
+    }, { merge: true });
+
+    await setDoc(doc(window.firebaseDb, ...root, "messes", messId), messRecord, { merge: true });
+
+    await setDoc(doc(window.firebaseDb, ...root, "messes", messId, "settings", "primary"), createBlankMessSettings({
+        messId,
         adminPassword: DEFAULT_ADMIN_PASSWORD,
         customAdjLabel: DEFAULT_CUSTOM_ADJ_LABEL,
-        activeMonth: "2026-01",
-        status: "empty",
+        activeMonth: DEFAULT_ACTIVE_MONTH_KEY,
         environment: ns,
         schemaVersion: FIRESTORE_SCHEMA_VERSION,
         createdAt: now,
         updatedAt: now
-    });
+    }), { merge: true });
 
-    await setDoc(doc(window.firebaseDb, ...root, "messes", MESS_ID, "members", "registry"), {
+    await setDoc(doc(window.firebaseDb, ...root, "messes", messId, "members", "registry"), {
+        messId,
         totalMembers: 0,
         list: [],
         status: "empty",
         environment: ns,
         schemaVersion: FIRESTORE_SCHEMA_VERSION,
         updatedAt: now
-    });
+    }, { merge: true });
 
-    await setDoc(doc(window.firebaseDb, ...root, "messes", MESS_ID, "months", "index"), {
-        totalMonths: 0,
-        monthKeys: [],
+    const monthIndex = [];
+    for (let m = 1; m <= 12; m++) {
+        monthIndex.push(`${CURRENT_YEAR}-${String(m).padStart(2, '0')}`);
+    }
+
+    await setDoc(doc(window.firebaseDb, ...root, "messes", messId, "months", "index"), {
+        messId,
+        totalMonths: monthIndex.length,
+        monthKeys: monthIndex,
         status: "empty",
         environment: ns,
         schemaVersion: FIRESTORE_SCHEMA_VERSION,
         updatedAt: now
-    });
+    }, { merge: true });
 
-    await setDoc(doc(window.firebaseDb, ...root, "messes", MESS_ID, "notices", "index"), {
+    await setDoc(doc(window.firebaseDb, ...root, "messes", messId, "notices", "index"), {
+        messId,
         totalNotices: 0,
         status: "empty",
         environment: ns,
         schemaVersion: FIRESTORE_SCHEMA_VERSION,
         updatedAt: now
-    });
+    }, { merge: true });
 
-    await setDoc(doc(window.firebaseDb, ...root, "messes", MESS_ID, "transactions", "index"), {
+    await setDoc(doc(window.firebaseDb, ...root, "messes", messId, "transactions", "index"), {
+        messId,
         totalTransactions: 0,
         status: "empty",
         environment: ns,
         schemaVersion: FIRESTORE_SCHEMA_VERSION,
         updatedAt: now
+    }, { merge: true });
+
+    await setDoc(doc(window.firebaseDb, ...root, "messes", messId, "extensions", "core"), {
+        bankingEnabled: false,
+        selfTrackerEnabled: false,
+        exportsEnabled: true,
+        features: [],
+        environment: ns,
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        updatedAt: now
+    }, { merge: true });
+
+    return { bootstrapped: true, schemaVersion: FIRESTORE_SCHEMA_VERSION, environment: ns, messId };
+}
+
+async function initializeFreshLiveMess({ env = null, messName = "Isotope Mess" } = {}) {
+    const targetEnv = env || getDataNamespace();
+    const targetMessId = generateIsotopeId("MESS");
+    const now = new Date().toISOString();
+    const basePath = [targetEnv];
+
+    if (!window.firebaseDb) {
+        throw new Error("Firebase database not connected.");
+    }
+
+    const { doc, setDoc } = await getFirestoreModule();
+
+    const messRecord = createBlankMessRecord({
+        messId: targetMessId,
+        name: messName,
+        status: "active",
+        environment: targetEnv,
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        createdAt: now,
+        updatedAt: now
     });
 
-    return { bootstrapped: true, schemaVersion: FIRESTORE_SCHEMA_VERSION, environment: ns };
+    await setDoc(doc(window.firebaseDb, ...basePath, "app", "meta"), {
+        appId: "ISO-APP-ROOT",
+        name: "Isotope",
+        defaultLocale: "bn",
+        defaultCurrency: "BDT",
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        environment: targetEnv,
+        status: "active",
+        createdAt: now,
+        updatedAt: now
+    }, { merge: true });
+
+    await setDoc(doc(window.firebaseDb, ...basePath, "messes", targetMessId), messRecord, { merge: true });
+    await setDoc(doc(window.firebaseDb, ...basePath, "messes", targetMessId, "settings", "primary"), createBlankMessSettings({
+        messId: targetMessId,
+        adminPassword: DEFAULT_ADMIN_PASSWORD,
+        customAdjLabel: DEFAULT_CUSTOM_ADJ_LABEL,
+        activeMonth: DEFAULT_ACTIVE_MONTH_KEY,
+        environment: targetEnv,
+        createdAt: now,
+        updatedAt: now
+    }), { merge: true });
+
+    await setDoc(doc(window.firebaseDb, ...basePath, "messes", targetMessId, "members", "registry"), {
+        messId: targetMessId,
+        totalMembers: 0,
+        list: [],
+        status: "empty",
+        environment: targetEnv,
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        updatedAt: now
+    }, { merge: true });
+
+    return {
+        messId: targetMessId,
+        env: targetEnv,
+        activeMonth: DEFAULT_ACTIVE_MONTH_KEY,
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        status: "ready"
+    };
+}
+
+async function resetFirebaseToFreshMess({ env = null, messName = "Isotope Mess" } = {}) {
+    await resetFirestoreDatabase();
+    const result = await initializeFreshLiveMess({ env, messName });
+    return result;
 }
 
 function resetLocalAppStateToEmpty() {
-    const emptyMonth = createEmptyMonthData("2026-01");
+    const emptyMonth = createEmptyMonthData(DEFAULT_ACTIVE_MONTH_KEY);
     state.masterMembers = [];
     state.months = createInitialMonthsData(CURRENT_YEAR);
-    state.activeMonth = "2026-01";
+    state.activeMonth = DEFAULT_ACTIVE_MONTH_KEY;
     state.customAdjLabel = DEFAULT_CUSTOM_ADJ_LABEL;
     state.adminPassword = DEFAULT_ADMIN_PASSWORD;
     state.fixedCosts = { ...emptyMonth.fixedCosts };
     state.members = emptyMonth.members.map(m => ({ ...m }));
     state.notices = [];
     state.transactions = [];
+    state.meals = [];
+    state.marketPlans = [];
+    state.mess = createBlankMessRecord({
+        messId: DEFAULT_MESS_ID,
+        name: "Isotope Mess",
+        status: "empty",
+        environment: getDataNamespace(),
+        schemaVersion: FIRESTORE_SCHEMA_VERSION
+    });
     localStorage.setItem('isotope_mess_data_v3', JSON.stringify({
         masterMembers: [],
         months: state.months,
-        activeMonth: "2026-01",
+        activeMonth: DEFAULT_ACTIVE_MONTH_KEY,
         adminPassword: DEFAULT_ADMIN_PASSWORD,
         customAdjLabel: DEFAULT_CUSTOM_ADJ_LABEL,
-        version: "3.0"
+        mess: state.mess,
+        version: "3.1"
     }));
     return true;
 }
 
 window.resetFirestoreDatabase = resetFirestoreDatabase;
 window.bootstrapEmptyFirestoreTree = bootstrapEmptyFirestoreTree;
+window.initializeFreshLiveMess = initializeFreshLiveMess;
+window.resetFirebaseToFreshMess = resetFirebaseToFreshMess;
 window.resetLocalAppStateToEmpty = resetLocalAppStateToEmpty;
 
 // ---------- DOM Helpers ----------
@@ -462,7 +663,7 @@ async function saveData() {
 
         await setDoc(fixedRef, {
             ...state.fixedCosts,
-            customAdjLabel: state.customAdjLabel || "ফ্রিজ ও অন্যান্য",
+            customAdjLabel: state.customAdjLabel || "অন্যান্য",
             environment: getDataNamespace(),
             schemaVersion: FIRESTORE_SCHEMA_VERSION,
             updatedAt: now
