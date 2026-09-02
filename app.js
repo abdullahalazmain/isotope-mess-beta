@@ -26,8 +26,8 @@ function getDataNamespace() {
 }
 
 function getDataPath(...segments) {
-    const explicitEnv = segments.length && ['dev', 'prod'].includes(segments[0]) ? segments.shift() : getDataNamespace();
-    return [explicitEnv, ...segments].filter(Boolean);
+    const explicitEnv = segments.length && ['dev', 'prod'].includes(String(segments[0])) ? segments.shift() : getDataNamespace();
+    return ['data', explicitEnv, ...segments].filter(Boolean);
 }
 
 function isValidAdminPassword(candidate, allowLegacy = true) {
@@ -287,23 +287,23 @@ async function resetFirestoreDatabase({ env = null } = {}) {
         "transactions",
         "profiles",
         "accounts",
-        "auditLogs",
-        "dev",
-        "prod"
+        "auditLogs"
     ];
 
     for (const collectionName of rootCollections) {
         try {
-            await deleteFirestoreCollectionTree([targetEnv, collectionName], deletedPaths);
+            await deleteFirestoreCollectionTree(['data', targetEnv, collectionName], deletedPaths);
         } catch (err) {
             // Ignore if collection does not exist.
         }
     }
 
     try {
-        await deleteFirestoreCollectionTree([targetEnv], deletedPaths);
+        const { doc, deleteDoc } = await getFirestoreModule();
+        await deleteDoc(doc(window.firebaseDb, 'data', targetEnv));
+        deletedPaths.push(`data/${targetEnv}`);
     } catch (err) {
-        // Ignore if root namespace is not a collection.
+        // Ignore if root namespace doc does not exist.
     }
 
     return { cleared: true, deletedPaths, environment: targetEnv };
@@ -420,13 +420,19 @@ async function initializeFreshLiveMess({ env = null, messName = "Isotope Mess" }
     const targetEnv = env || getDataNamespace();
     const targetMessId = generateIsotopeId("MESS");
     const now = new Date().toISOString();
-    const basePath = [targetEnv];
+    const basePath = getDataPath(targetEnv);
 
     if (!window.firebaseDb) {
         throw new Error("Firebase database not connected.");
     }
 
     const { doc, setDoc } = await getFirestoreModule();
+    await setDoc(doc(window.firebaseDb, 'data', targetEnv), {
+        environment: targetEnv,
+        type: 'namespace',
+        schemaVersion: FIRESTORE_SCHEMA_VERSION,
+        updatedAt: now
+    }, { merge: true });
 
     const messRecord = createBlankMessRecord({
         messId: targetMessId,
