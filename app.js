@@ -957,7 +957,12 @@ async function loadFromFirestore() {
             console.warn("Firebase members registry load warning:", err);
         }
 
+        for (let month = 1; month <= 12; month++) {
+            const monthKey = `${CURRENT_YEAR}-${String(month).padStart(2, '0')}`;
+            await loadMonthDataFromFirestore(monthKey);
+        }
         await loadMonthDataFromFirestore(state.activeMonth);
+        recalculateAllPreviousMonthBalances();
 
         updateMonthDisplayUI();
         calculateAll();
@@ -979,7 +984,7 @@ async function loadMonthDataFromFirestore(mKey) {
                 const mDocData = monthSnap.data();
                 if (mDocData.fixedCosts) state.fixedCosts = { ...mDocData.fixedCosts };
                 if (mDocData.customAdjLabel) state.customAdjLabel = mDocData.customAdjLabel;
-                if (Array.isArray(mDocData.members) && mDocData.members.length > 0) state.members = mDocData.members;
+                if (Array.isArray(mDocData.members)) state.members = mDocData.members;
                 if (Array.isArray(mDocData.notices)) state.notices = mDocData.notices;
                 if (Array.isArray(mDocData.transactions)) state.transactions = mDocData.transactions;
 
@@ -1566,6 +1571,20 @@ function calculatePrevMonthBalanceForMember(mKey, memberName) {
 
     const totalNetPayableWithRent = (netPayableWithoutRent + rentNum) - memberTotalDeposit;
     return Math.round(totalNetPayableWithRent * 100) / 100;
+}
+
+function recalculateAllPreviousMonthBalances() {
+    if (!state.months) return;
+
+    for (let month = 2; month <= 12; month++) {
+        const monthKey = `${CURRENT_YEAR}-${String(month).padStart(2, '0')}`;
+        const monthData = state.months[monthKey];
+        if (!monthData || !Array.isArray(monthData.members)) continue;
+
+        monthData.members.forEach(member => {
+            member.prevAdj = calculatePrevMonthBalanceForMember(monthKey, member.name);
+        });
+    }
 }
 
 // ---------- Month Switcher Controls ----------
