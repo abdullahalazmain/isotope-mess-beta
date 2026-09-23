@@ -121,8 +121,20 @@
                 <select id="txnMemberSelect" class="drawer-input"></select>
             </div>
             <div class="input-group" style="margin-top: 12px;">
-                <label>জমার পরিমাণ (BDT):</label>
-                <input type="number" id="txnAmountInput" class="drawer-input" placeholder="যেমন: 1000">
+                <label>লেনদেনের ধরণ:</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
+                    <button type="button" id="txnTypeDepositBtn" class="txn-type-btn active-deposit" onclick="setTxnType('deposit')">
+                        ➕ টাকা জমা (+)
+                    </button>
+                    <button type="button" id="txnTypeWithdrawBtn" class="txn-type-btn" onclick="setTxnType('withdraw')">
+                        ➖ ফেরত / উত্তোলন (-)
+                    </button>
+                </div>
+            </div>
+            <div class="input-group" style="margin-top: 12px;">
+                <label id="txnAmountLabel">পরিমাণ (BDT):</label>
+                <input type="number" id="txnAmountInput" class="drawer-input" placeholder="যেমন: 1000" step="any" oninput="onTxnAmountInput()">
+                <small id="txnAmountHint" style="color: #64748b; font-size: 11.5px; margin-top: 4px; display: block;">সদস্য মেস থেকে টাকা নিলে মাইনাস মান দিন (যেমন: -500)</small>
             </div>
             <div class="input-group" style="margin-top: 12px;">
                 <label>তারিখ ও সময়:</label>
