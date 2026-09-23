@@ -2015,7 +2015,12 @@ function renderTransposedTable(mealRate, perHead) {
             if (r.isTotalExp) html += `<td class="text-right font-bold">${bdt(totalExpenseExceptRent)}</td>`;
             else if (r.isDeposit) html += `<td class="text-right font-bold text-green">${bdt(bazarNum)}</td>`;
             else if (r.isNetPayable) html += `<td class="text-right font-bold">${formatValueWithColor(netPayableWithoutRent)}</td>`;
-            else if (r.isTotalDeposit) html += `<td class="text-right font-bold text-green">${bdt(memberTotalDeposit)}</td>`;
+            else if (r.isTotalDeposit) {
+                const isNeg = memberTotalDeposit < 0;
+                const depDisplay = isNeg ? `- ${bdt(Math.abs(memberTotalDeposit))}` : bdt(memberTotalDeposit);
+                const depClass = isNeg ? 'text-red' : 'text-green';
+                html += `<td class="text-right font-bold ${depClass}">${depDisplay}</td>`;
+            }
             else if (r.isNetPayableWithRent) html += `<td class="text-right font-bold">${formatValueWithColor(totalNetPayableWithRent)}</td>`;
             else if (r.isRawFormatted) html += `<td class="text-right">${m[r.key]}</td>`;
             else if (r.calc) html += `<td class="text-right">${r.calc(m)}</td>`;
@@ -2159,11 +2164,18 @@ function renderTransactions() {
         const matchesSearch = t.member.toLowerCase().includes(searchQuery) || t.note.toLowerCase().includes(searchQuery);
         if (!matchesMember || !matchesSearch) return;
 
-        totalAmount += Number(t.amount);
+        const amt = Number(t.amount);
+        totalAmount += amt;
 
         const adminBtnHtml = adminMode
             ? `<td class="text-center td-admin-action"><div class="table-action-group"><button class="icon-action-btn" onclick="editTransaction(${t.id})" title="এডিট" aria-label="এডিট"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.03 0-1.42l-2.34-2.34a1 1 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/></svg></button><button class="icon-action-btn icon-action-btn--danger" onclick="deleteTransaction(${t.id})" title="ডিলিট" aria-label="ডিলিট"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div></td>`
             : '';
+
+        const isNegative = amt < 0;
+        const amountDisplay = isNegative 
+            ? `- ${bdt(Math.abs(amt))}` 
+            : `+ ${bdt(amt)}`;
+        const amountColorClass = isNegative ? "text-red" : "text-green";
 
         rows.push(`
             <tr>
@@ -2171,14 +2183,23 @@ function renderTransactions() {
                 <td>${t.date}</td>
                 <td class="font-bold">${t.member}</td>
                 <td>${t.note}</td>
-                <td class="text-right font-bold text-green">+ ${bdt(t.amount)}</td>
+                <td class="text-right font-bold ${amountColorClass}">${amountDisplay}</td>
                 ${adminBtnHtml}
             </tr>
         `);
     });
 
     tbody.innerHTML = rows.join('');
-    $('excelTotalAmount').innerText = bdt(totalAmount);
+    const totalEl = $('excelTotalAmount');
+    if (totalEl) {
+        if (totalAmount < 0) {
+            totalEl.className = "text-right font-bold text-red";
+            totalEl.innerText = `- ${bdt(Math.abs(totalAmount))}`;
+        } else {
+            totalEl.className = "text-right font-bold text-green";
+            totalEl.innerText = bdt(totalAmount);
+        }
+    }
 }
 
 // ---------- Highlight Member Column with Mobile Smooth Auto-Scroll ----------
@@ -2451,21 +2472,35 @@ function editTransaction(txnId) {
     $('txnAmountInput').value = transaction.amount;
     if ($('txnDateTimeInput')) $('txnDateTimeInput').value = transactionDateTimeValue(transaction.date);
     $('txnNoteInput').value = transaction.note;
+    if (Number(transaction.amount) < 0) {
+        setTxnType('withdraw');
+    } else {
+        setTxnType('deposit');
+    }
     const title = $('depositModal')?.querySelector('h3');
     const saveButton = $('depositModal')?.querySelector('.modal-actions .clay-btn-primary');
-    if (title) title.innerText = 'মেম্বার ডিপোজিট এডিট';
-    if (saveButton) saveButton.lastChild.textContent = ' ডিপোজিট আপডেট করুন';
+    if (title) title.innerText = Number(transaction.amount) < 0 ? 'মেস থেকে উত্তোলন/ফেরত এডিট' : 'মেম্বার ডিপোজিট এডিট';
+    if (saveButton) saveButton.lastChild.textContent = ' ট্রানজেকশন আপডেট করুন';
 }
 
 function submitDepositTransaction() {
     const memberName = $('txnMemberSelect').value;
-    const amount = numVal('txnAmountInput');
-    const note = textVal('txnNoteInput') || "ক্যাশ জমা";
+    const rawVal = $('txnAmountInput')?.value?.trim();
+    let amount = Number(rawVal);
 
-    if (!amount || amount <= 0) {
-        showToast("সঠিক টাকার পরিমাণ লিখুন!", "error");
+    if (!rawVal || isNaN(amount) || amount === 0) {
+        showToast("সঠিক টাকার পরিমাণ লিখুন (শূন্য হতে পারবে না)!", "error");
         return;
     }
+
+    const isWithdrawType = $('txnTypeWithdrawBtn')?.classList.contains('active-withdraw');
+    if (isWithdrawType && amount > 0) {
+        amount = -amount;
+    }
+
+    const isNegative = amount < 0;
+    const defaultNote = isNegative ? "মেস থেকে ফেরত / উত্তোলন" : "ক্যাশ জমা";
+    const note = textVal('txnNoteInput') || defaultNote;
 
     const now = new Date();
     const formattedDate = `${now.toLocaleDateString('en-GB')}, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
@@ -2487,16 +2522,24 @@ function submitDepositTransaction() {
 
     closeDepositModal();
     saveData();
-    showToast(`${memberName}-এর জন্য ${bdt(amount)} সফলভাবে জমা হয়েছে!`, "success");
+    if (isNegative) {
+        showToast(`${memberName}-এর মেস থেকে উত্তোলন/ফেরত ${bdt(Math.abs(amount))} সফলভাবে বিয়োগ করা হয়েছে!`, "info");
+    } else {
+        showToast(`${memberName}-এর জন্য ${bdt(amount)} সফলভাবে জমা হয়েছে!`, "success");
+    }
 }
 
 function deleteTransaction(txnId) {
     const targetTxn = state.transactions.find(t => t.id === txnId);
     if (!targetTxn) return;
 
+    const isNeg = Number(targetTxn.amount) < 0;
+    const formattedAmt = isNeg ? `- ${bdt(Math.abs(targetTxn.amount))}` : bdt(targetTxn.amount);
+    const actionDesc = isNeg ? 'উত্তোলন/ফেরতের' : 'জমার';
+
     showConfirmModal(
         "ট্রানজেকশন ডিলিট",
-        `আপনি কি নিশ্চিত যে ${targetTxn.member}-এর ${bdt(targetTxn.amount)} জমার এন্ট্রিটি ডিলিট করতে চান?`,
+        `আপনি কি নিশ্চিত যে ${targetTxn.member}-এর ${formattedAmt} ${actionDesc} এন্ট্রিটি ডিলিট করতে চান?`,
         async () => {
             state.transactions = state.transactions.filter(t => t.id !== txnId);
             saveData();
@@ -2946,6 +2989,64 @@ function hideAdminPage() {
 }
 
 // ---------- Modal Controls ----------
+function setTxnType(type) {
+    const depBtn = $('txnTypeDepositBtn');
+    const wdrBtn = $('txnTypeWithdrawBtn');
+    const amtInput = $('txnAmountInput');
+    const noteInput = $('txnNoteInput');
+    const label = $('txnAmountLabel');
+    const hint = $('txnAmountHint');
+
+    if (type === 'withdraw') {
+        if (depBtn) depBtn.classList.remove('active-deposit');
+        if (wdrBtn) wdrBtn.classList.add('active-withdraw');
+        if (label) label.innerText = 'ফেরত / উত্তোলনের পরিমাণ (BDT):';
+        if (hint) hint.innerText = 'সদস্য মেস থেকে টাকা নিলে জমা থেকে বিয়োগ (মাইনাস) হবে';
+        if (amtInput) {
+            amtInput.placeholder = 'যেমন: -500 বা 500';
+            const curVal = amtInput.value.trim();
+            if (curVal && !isNaN(Number(curVal)) && Number(curVal) > 0) {
+                amtInput.value = -Math.abs(Number(curVal));
+            }
+        }
+        if (noteInput && (!noteInput.value || noteInput.value === 'ক্যাশ জমা')) {
+            noteInput.placeholder = 'যেমন: মেস থেকে ফেরত / উত্তোলন';
+        }
+    } else {
+        if (wdrBtn) wdrBtn.classList.remove('active-withdraw');
+        if (depBtn) depBtn.classList.add('active-deposit');
+        if (label) label.innerText = 'জমার পরিমাণ (BDT):';
+        if (hint) hint.innerText = 'সদস্য মেস থেকে টাকা নিলে মাইনাস মান দিন (যেমন: -500)';
+        if (amtInput) {
+            amtInput.placeholder = 'যেমন: 1000';
+            const curVal = amtInput.value.trim();
+            if (curVal && !isNaN(Number(curVal)) && Number(curVal) < 0) {
+                amtInput.value = Math.abs(Number(curVal));
+            }
+        }
+        if (noteInput && (!noteInput.value || noteInput.value === 'মেস থেকে ফেরত / উত্তোলন')) {
+            noteInput.placeholder = 'যেমন: ক্যাশ জমা / বিকাশ';
+        }
+    }
+}
+window.setTxnType = setTxnType;
+
+function onTxnAmountInput() {
+    const amtInput = $('txnAmountInput');
+    if (!amtInput) return;
+    const val = amtInput.value.trim();
+    if (!val) return;
+    const num = Number(val);
+    if (!isNaN(num)) {
+        if (num < 0) {
+            setTxnType('withdraw');
+        } else if (num > 0 && !val.startsWith('-')) {
+            // Keep user selection or switch if needed
+        }
+    }
+}
+window.onTxnAmountInput = onTxnAmountInput;
+
 function openDepositModal() {
     const modal = $('depositModal');
     if (!modal) return;
@@ -2966,6 +3067,7 @@ function openDepositModal() {
     if (amtInput) amtInput.value = '';
     if (dateTimeInput) dateTimeInput.value = '';
     if (noteInput) noteInput.value = '';
+    setTxnType('deposit');
     modal.style.display = 'flex';
 }
 
